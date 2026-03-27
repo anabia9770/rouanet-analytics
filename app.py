@@ -145,3 +145,81 @@ with col2:
 # -------------------------
 st.markdown("### 📋 Projetos")
 st.dataframe(df_f, use_container_width=True)
+
+# -------------------------
+# NOVOS BLOCOS (MUNICÍPIOS)
+# -------------------------
+st.markdown("## 📍 Análise Territorial")
+
+col1, col2 = st.columns([2, 1])
+
+# -------------------------
+# GRÁFICO: ANÁLISE POR MUNICÍPIO
+# -------------------------
+with col1:
+
+    top_mun = (
+        df_f.groupby("cidade")[["valor_aprovado", "valor_captado"]]
+        .sum()
+        .sort_values("valor_aprovado", ascending=False)
+        .head(10)
+        .reset_index()
+    )
+
+    fig_mun = px.bar(
+        top_mun,
+        x="cidade",
+        y=["valor_aprovado", "valor_captado"],
+        barmode="group",
+        title="Análise por Município"
+    )
+
+    fig_mun.update_layout(
+        xaxis_title="",
+        yaxis_title="",
+        plot_bgcolor="white",
+        paper_bgcolor="white"
+    )
+
+    fig_mun.update_traces(
+        selector=dict(name="valor_aprovado"),
+        marker_color="#6D28D9"
+    )
+
+    fig_mun.update_traces(
+        selector=dict(name="valor_captado"),
+        marker_color="#10B981"
+    )
+
+    st.plotly_chart(fig_mun, use_container_width=True)
+
+# -------------------------
+# RANKING: ONDE INVESTIR
+# -------------------------
+with col2:
+
+    st.markdown("### 📌 Onde Investir")
+    st.caption("Municípios com maior gap de captação")
+
+    ranking = (
+        df_f.groupby("cidade")[["valor_aprovado", "valor_captado"]]
+        .sum()
+        .assign(gap=lambda x: x["valor_aprovado"] - x["valor_captado"])
+        .sort_values("gap", ascending=False)
+        .head(6)
+        .reset_index()
+    )
+
+    for i, row in ranking.iterrows():
+
+        progresso = row["valor_captado"] / row["valor_aprovado"] if row["valor_aprovado"] > 0 else 0
+
+        st.markdown(f"""
+        <div style="background:#f9fafb;padding:12px;border-radius:12px;margin-bottom:10px;">
+            <b>{i+1}. {row['cidade']}</b><br>
+            Gap: R$ {row['gap']/1e6:.1f}M<br>
+            Total: R$ {row['valor_aprovado']/1e6:.1f}M
+        </div>
+        """, unsafe_allow_html=True)
+
+        st.progress(progresso)
