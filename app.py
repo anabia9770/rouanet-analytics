@@ -3,13 +3,10 @@ import pandas as pd
 import plotly.express as px
 import unicodedata
 
-# -------------------------
-# CONFIG
-# -------------------------
 st.set_page_config(layout="wide")
 
 # -------------------------
-# FUNÇÃO NORMALIZAR COLUNAS
+# NORMALIZAR COLUNAS
 # -------------------------
 def normalize_col(col):
     col = col.strip().lower().replace(" ", "_")
@@ -17,50 +14,95 @@ def normalize_col(col):
     return col
 
 # -------------------------
+# CSS (CARDS BONITOS)
+# -------------------------
+st.markdown("""
+<style>
+
+.card {
+    background: #f9fafb;
+    padding: 20px;
+    border-radius: 16px;
+    border: 1px solid #e5e7eb;
+}
+
+.kpi-title {
+    font-size: 14px;
+    color: #6b7280;
+}
+
+.kpi-value {
+    font-size: 28px;
+    font-weight: bold;
+    color: #111827;
+}
+
+.block {
+    background: #f9fafb;
+    padding: 15px;
+    border-radius: 16px;
+    border: 1px solid #e5e7eb;
+}
+
+</style>
+""", unsafe_allow_html=True)
+
+# -------------------------
 # TÍTULO
 # -------------------------
 st.title("📊 Rouanet Analytics")
-st.caption("Dashboard de análise de projetos culturais")
+st.caption("Painel do Investidor")
 
 # -------------------------
 # DADOS
 # -------------------------
 df = pd.read_excel("TCC.xlsx")
-
-# normaliza nomes
 df.columns = [normalize_col(c) for c in df.columns]
 
-# ajuste correto baseado no seu Excel
 df["valor_aprovado"] = pd.to_numeric(df.get("valor_solicitado", 0), errors="coerce").fillna(0)
 df["valor_captado"] = pd.to_numeric(df.get("valor_captado", 0), errors="coerce").fillna(0)
-
 df["gap"] = df["valor_aprovado"] - df["valor_captado"]
 
 # -------------------------
-# FILTROS
+# FILTROS NO TOPO
 # -------------------------
-st.sidebar.title("Filtros")
+st.markdown("### 🔎 Filtros")
 
-mun = st.sidebar.multiselect("Cidade", df["cidade"].dropna().unique())
-seg = st.sidebar.multiselect("Segmento", df["segmento"].dropna().unique())
+f1, f2 = st.columns(2)
+
+with f1:
+    cidade = st.multiselect("Cidade", df["cidade"].dropna().unique())
+
+with f2:
+    segmento = st.multiselect("Segmento", df["segmento"].dropna().unique())
 
 df_f = df.copy()
 
-if mun:
-    df_f = df_f[df_f["cidade"].isin(mun)]
+if cidade:
+    df_f = df_f[df_f["cidade"].isin(cidade)]
 
-if seg:
-    df_f = df_f[df_f["segmento"].isin(seg)]
+if segmento:
+    df_f = df_f[df_f["segmento"].isin(segmento)]
 
 # -------------------------
-# KPIs
+# KPIs (CARDS)
 # -------------------------
+st.markdown("### 📊 Visão Geral")
+
 c1, c2, c3, c4 = st.columns(4)
 
-c1.metric("Projetos", len(df_f))
-c2.metric("Solicitado", f"R$ {df_f['valor_aprovado'].sum():,.0f}")
-c3.metric("Captado", f"R$ {df_f['valor_captado'].sum():,.0f}")
-c4.metric("Gap", f"R$ {df_f['gap'].sum():,.0f}")
+def card(titulo, valor):
+    return f"""
+    <div class="card">
+        <div class="kpi-title">{titulo}</div>
+        <div class="kpi-value">{valor}</div>
+    </div>
+    """
+
+c1.markdown(card("Projetos", len(df_f)), unsafe_allow_html=True)
+c2.markdown(card("Valor Aprovado", f"R$ {df_f['valor_aprovado'].sum()/1e6:.1f}M"), unsafe_allow_html=True)
+c3.markdown(card("Valor Captado", f"R$ {df_f['valor_captado'].sum()/1e6:.1f}M"), unsafe_allow_html=True)
+c4.markdown(card("Gap de Investimento", f"R$ {df_f['gap'].sum()/1e6:.1f}M"), unsafe_allow_html=True)
 
 # -------------------------
 # GRÁFICOS
@@ -69,7 +111,7 @@ st.markdown("### 📈 Análises")
 
 col1, col2 = st.columns(2)
 
-# Evolução por Ano
+# Evolução
 with col1:
 
     if "data_inicio" in df_f.columns:
@@ -79,52 +121,27 @@ with col1:
             df_f.groupby("ano")[["valor_aprovado", "valor_captado"]]
             .sum()
             .reset_index()
-            .sort_values("ano")
         )
 
-        fig_linha = px.line(
-            evolucao,
-            x="ano",
-            y=["valor_aprovado", "valor_captado"],
-            markers=True
-        )
+        fig = px.line(evolucao, x="ano", y=["valor_aprovado", "valor_captado"], markers=True)
+        st.plotly_chart(fig, use_container_width=True)
 
-        st.plotly_chart(fig_linha, use_container_width=True)
-
-    else:
-        st.warning("Coluna 'data_inicio' não encontrada")
-
-# Top Segmentos
+# Segmentos
 with col2:
 
-    if "segmento" in df_f.columns:
+    top = (
+        df_f.groupby("segmento")["valor_aprovado"]
+        .sum()
+        .sort_values(ascending=False)
+        .head(8)
+        .reset_index()
+    )
 
-        top_segmentos = (
-            df_f.groupby("segmento")["valor_aprovado"]
-            .sum()
-            .sort_values(ascending=False)
-            .head(8)
-            .reset_index()
-        )
-
-        fig_bar = px.bar(
-            top_segmentos,
-            x="valor_aprovado",
-            y="segmento",
-            orientation="h"
-        )
-
-        st.plotly_chart(fig_bar, use_container_width=True)
-
-    else:
-        st.warning("Coluna 'segmento' não encontrada")
+    fig = px.bar(top, x="valor_aprovado", y="segmento", orientation="h")
+    st.plotly_chart(fig, use_container_width=True)
 
 # -------------------------
 # TABELA
 # -------------------------
-st.markdown("### Projetos")
-
-st.dataframe(
-    df_f.sort_values("gap", ascending=False),
-    use_container_width=True
-)
+st.markdown("### 📋 Projetos")
+st.dataframe(df_f, use_container_width=True)
