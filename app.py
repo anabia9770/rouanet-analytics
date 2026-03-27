@@ -117,39 +117,95 @@ c4.markdown(card("Gap", f"R$ {df_f['gap'].sum():,.0f}"), unsafe_allow_html=True)
 st.markdown("<br>", unsafe_allow_html=True)
 
 # -------------------------
-# GRÁFICOS
+# NOVOS GRÁFICOS
 # -------------------------
+st.markdown("### 📈 Análises")
+
 col1, col2 = st.columns(2)
 
+# -------- Evolução por Ano --------
 with col1:
-    fig1 = px.bar(
-        df_f.groupby("segmento")["valor_aprovado"].sum().reset_index(),
+
+    if "data_inicio" in df_f.columns:
+        df_f["ano"] = pd.to_datetime(df_f["data_inicio"], errors="coerce").dt.year
+
+        evolucao = (
+            df_f.groupby("ano")[["valor_aprovado", "valor_captado"]]
+            .sum()
+            .reset_index()
+            .sort_values("ano")
+        )
+
+        fig_linha = px.line(
+            evolucao,
+            x="ano",
+            y=["valor_aprovado", "valor_captado"],
+            markers=True
+        )
+
+        fig_linha.update_traces(line=dict(width=3), marker=dict(size=6))
+
+        fig_linha.update_layout(
+            title="Evolução por Ano",
+            plot_bgcolor="white",
+            paper_bgcolor="white",
+            margin=dict(l=10, r=10, t=50, b=10),
+            xaxis_title="",
+            yaxis_title=""
+        )
+
+        fig_linha.update_traces(
+            selector=dict(name="valor_aprovado"),
+            line=dict(color="#6D28D9")
+        )
+
+        fig_linha.update_traces(
+            selector=dict(name="valor_captado"),
+            line=dict(color="#10B981")
+        )
+
+        st.plotly_chart(fig_linha, use_container_width=True)
+
+    else:
+        st.warning("Coluna 'data_inicio' não encontrada para gráfico de evolução.")
+
+# -------- Top Segmentos --------
+with col2:
+
+    top_segmentos = (
+        df_f.groupby("segmento")["valor_aprovado"]
+        .sum()
+        .sort_values(ascending=False)
+        .head(8)
+        .reset_index()
+    )
+
+    fig_bar = px.bar(
+        top_segmentos,
         x="valor_aprovado",
         y="segmento",
         orientation="h",
-        color_discrete_sequence=["#6D28D9"]  # roxo
+        text="valor_aprovado"
     )
-    fig1.update_layout(
-        plot_bgcolor="white",
-        paper_bgcolor="white",
-        margin=dict(l=10, r=10, t=30, b=10)
-    )
-    st.plotly_chart(fig1, use_container_width=True)
 
-with col2:
-    fig2 = px.bar(
-        df_f.groupby("municipio")["gap"].sum().reset_index().sort_values("gap"),
-        x="gap",
-        y="municipio",
-        orientation="h",
-        color_discrete_sequence=["#F59E0B"]  # laranja
+    fig_bar.update_traces(
+        marker_color="#6D28D9",
+        texttemplate="R$ %{text:,.0f}",
+        textposition="outside"
     )
-    fig2.update_layout(
+
+    fig_bar.update_layout(
+        title="Valor por Segmento Cultural",
         plot_bgcolor="white",
         paper_bgcolor="white",
-        margin=dict(l=10, r=10, t=30, b=10)
+        margin=dict(l=10, r=10, t=50, b=10),
+        xaxis_title="",
+        yaxis_title=""
     )
-    st.plotly_chart(fig2, use_container_width=True)
+
+    fig_bar.update_yaxes(categoryorder="total ascending")
+
+    st.plotly_chart(fig_bar, use_container_width=True)
 
 # -------------------------
 # TABELA
