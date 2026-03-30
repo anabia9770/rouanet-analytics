@@ -68,7 +68,7 @@ st.caption("Dashboard de análise de projetos culturais")
 # -------------------------
 # DADOS
 # -------------------------
-df = pd.read_excel("TCC_Projeto.xlsx")
+df = pd.read_excel("TCC.xlsx")
 df.columns = df.columns.str.lower().str.replace(" ", "_")
 
 df["valor_aprovado"] = pd.to_numeric(df.get("valor_aprovado", 0), errors="coerce").fillna(0)
