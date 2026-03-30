@@ -69,9 +69,12 @@ st.caption("Dashboard de análise de projetos culturais")
 # DADOS
 # -------------------------
 df = pd.read_excel("TCC.xlsx")
-df.columns = df.columns.str.lower().str.replace(" ", "_")
 
-df["valor_aprovado"] = pd.to_numeric(df.get("valor_aprovado", 0), errors="coerce").fillna(0)
+# normalizar colunas
+df.columns = df.columns.str.lower().str.strip().str.replace(" ", "_")
+
+# ajuste para nova planilha
+df["valor_aprovado"] = pd.to_numeric(df.get("valor_solicitado", 0), errors="coerce").fillna(0)
 df["valor_captado"] = pd.to_numeric(df.get("valor_captado", 0), errors="coerce").fillna(0)
 df["gap"] = df["valor_aprovado"] - df["valor_captado"]
 
@@ -80,13 +83,13 @@ df["gap"] = df["valor_aprovado"] - df["valor_captado"]
 # -------------------------
 st.sidebar.title("Filtros")
 
-mun = st.sidebar.multiselect("Município", df["municipio"].dropna().unique())
+mun = st.sidebar.multiselect("Município", df["cidade"].dropna().unique())
 seg = st.sidebar.multiselect("Segmento", df["segmento"].dropna().unique())
 
 df_f = df.copy()
 
 if mun:
-    df_f = df_f[df_f["municipio"].isin(mun)]
+    df_f = df_f[df_f["cidade"].isin(mun)]
 if seg:
     df_f = df_f[df_f["segmento"].isin(seg)]
 
@@ -111,7 +114,7 @@ c4.markdown(card("Gap", f"R$ {df_f['gap'].sum():,.0f}"), unsafe_allow_html=True)
 st.markdown("<br>", unsafe_allow_html=True)
 
 # -------------------------
-# 📈 ANÁLISES (GRÁFICOS)
+# 📈 ANÁLISES
 # -------------------------
 st.markdown("## 📈 Análises")
 
@@ -152,7 +155,7 @@ with col1:
 
         st.plotly_chart(fig_linha, use_container_width=True)
     else:
-        st.info("Adicione uma coluna de data para ver evolução temporal")
+        st.info("Sem coluna de data para evolução")
 
 # Top segmentos
 with col2:
@@ -197,7 +200,7 @@ with col2:
 st.markdown("## 🌎 Análise Territorial")
 
 top_municipios = (
-    df_f.groupby("municipio")["gap"]
+    df_f.groupby("cidade")["gap"]
     .sum()
     .sort_values(ascending=False)
     .head(10)
@@ -207,7 +210,7 @@ top_municipios = (
 fig_territorio = px.bar(
     top_municipios,
     x="gap",
-    y="municipio",
+    y="cidade",
     orientation="h",
     color_discrete_sequence=["#F59E0B"]
 )
@@ -233,13 +236,13 @@ st.markdown("""
 <div class="card">
 <b>Top oportunidades com maior potencial de captação:</b>
 <ul>
-""" + "".join([f"<li>{row['nome']} - R$ {row['gap']:,.0f}</li>" for _, row in top_oportunidades.iterrows()]) + """
+""" + "".join([f"<li>{row.get('projetos','Projeto')} - R$ {row['gap']:,.0f}</li>" for _, row in top_oportunidades.iterrows()]) + """
 </ul>
 </div>
 """, unsafe_allow_html=True)
 
 # -------------------------
-# 📋 TABELA (FINAL DA PÁGINA)
+# 📋 TABELA FINAL
 # -------------------------
 st.markdown("## 📋 Projetos")
 
