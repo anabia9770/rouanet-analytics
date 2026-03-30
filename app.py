@@ -8,7 +8,7 @@ import plotly.express as px
 st.set_page_config(layout="wide")
 
 # -------------------------
-# CSS
+# CSS MODERNO
 # -------------------------
 st.markdown("""
 <style>
@@ -17,74 +17,96 @@ body {
     background-color: #f7f8fc;
 }
 
-.main {
-    background-color: #f7f8fc;
+.block-container {
+    padding-top: 2rem;
 }
 
+/* Header */
+.header {
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:20px;
+}
+
+.badge {
+    background:#e5e7eb;
+    padding:6px 12px;
+    border-radius:999px;
+    font-size:12px;
+}
+
+/* Cards */
 .card {
-    background: white;
-    padding: 20px;
-    border-radius: 16px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.04);
+    background:white;
+    padding:20px;
+    border-radius:16px;
+    box-shadow:0 2px 10px rgba(0,0,0,0.04);
 }
 
+/* KPI */
 .kpi-title {
-    font-size: 13px;
-    color: #6b7280;
+    font-size:13px;
+    color:#6b7280;
 }
 
 .kpi-value {
-    font-size: 26px;
-    font-weight: 600;
-    color: #111827;
+    font-size:26px;
+    font-weight:600;
+    color:#111827;
 }
 
-section[data-testid="stSidebar"] {
-    background-color: #ffffff;
+/* Filtros */
+.filter-box {
+    background:white;
+    padding:20px;
+    border-radius:16px;
+    margin-bottom:20px;
 }
 
-.stMultiSelect div {
-    border-radius: 999px !important;
-}
-
-h1 {
-    font-weight: 600;
-}
-
+/* Tabela */
 [data-testid="stDataFrame"] {
-    border-radius: 12px;
-    overflow: hidden;
+    border-radius:12px;
+    overflow:hidden;
 }
 
 </style>
 """, unsafe_allow_html=True)
 
 # -------------------------
-# TÍTULO
+# HEADER
 # -------------------------
-st.title("📊 Rouanet Analytics")
-st.caption("Dashboard de análise de projetos culturais")
+st.markdown("""
+<div class="header">
+    <div>
+        <h2>📊 Rouanet Analytics</h2>
+        <span style="color:#6b7280;">Vale do Itajaí — Projetos Culturais</span>
+    </div>
+    <div class="badge">Dados: SALIC 🟢</div>
+</div>
+""", unsafe_allow_html=True)
 
 # -------------------------
 # DADOS
 # -------------------------
 df = pd.read_excel("TCC.xlsx")
 
-# normalizar colunas
 df.columns = df.columns.str.lower().str.strip().str.replace(" ", "_")
 
-# ajuste para nova planilha
 df["valor_aprovado"] = pd.to_numeric(df.get("valor_solicitado", 0), errors="coerce").fillna(0)
 df["valor_captado"] = pd.to_numeric(df.get("valor_captado", 0), errors="coerce").fillna(0)
 df["gap"] = df["valor_aprovado"] - df["valor_captado"]
 
 # -------------------------
-# FILTROS
+# FILTROS NO TOPO
 # -------------------------
-st.sidebar.title("Filtros")
+st.markdown("### 🔎 Filtros Interativos")
 
-mun = st.sidebar.multiselect("Município", df["cidade"].dropna().unique())
-seg = st.sidebar.multiselect("Segmento", df["segmento"].dropna().unique())
+with st.container():
+    f1, f2 = st.columns(2)
+
+    mun = f1.multiselect("Município", df["cidade"].dropna().unique())
+    seg = f2.multiselect("Segmento Cultural", df["segmento"].dropna().unique())
 
 df_f = df.copy()
 
@@ -98,68 +120,55 @@ if seg:
 # -------------------------
 c1, c2, c3, c4 = st.columns(4)
 
-def card(title, value):
+def card(title, value, icon):
     return f"""
     <div class="card">
-        <div class="kpi-title">{title}</div>
+        <div style="display:flex; justify-content:space-between;">
+            <div class="kpi-title">{title}</div>
+            <div>{icon}</div>
+        </div>
         <div class="kpi-value">{value}</div>
     </div>
     """
 
-c1.markdown(card("Projetos", len(df_f)), unsafe_allow_html=True)
-c2.markdown(card("Aprovado", f"R$ {df_f['valor_aprovado'].sum():,.0f}"), unsafe_allow_html=True)
-c3.markdown(card("Captado", f"R$ {df_f['valor_captado'].sum():,.0f}"), unsafe_allow_html=True)
-c4.markdown(card("Gap", f"R$ {df_f['gap'].sum():,.0f}"), unsafe_allow_html=True)
+c1.markdown(card("Projetos", len(df_f), "📁"), unsafe_allow_html=True)
+c2.markdown(card("Valor Aprovado", f"R$ {df_f['valor_aprovado'].sum():,.0f}", "💰"), unsafe_allow_html=True)
+c3.markdown(card("Valor Captado", f"R$ {df_f['valor_captado'].sum():,.0f}", "📊"), unsafe_allow_html=True)
+c4.markdown(card("Gap de Investimento", f"R$ {df_f['gap'].sum():,.0f}", "🎯"), unsafe_allow_html=True)
 
 st.markdown("<br>", unsafe_allow_html=True)
 
 # -------------------------
-# 📈 ANÁLISES
+# GRÁFICOS
 # -------------------------
-st.markdown("## 📈 Análises")
-
 col1, col2 = st.columns(2)
 
-# Evolução por ano
+# Evolução
 with col1:
     if "data_inicio" in df_f.columns:
         df_f["ano"] = pd.to_datetime(df_f["data_inicio"], errors="coerce").dt.year
 
-        evolucao = (
-            df_f.groupby("ano")[["valor_aprovado", "valor_captado"]]
-            .sum()
-            .reset_index()
-            .sort_values("ano")
-        )
+        evolucao = df_f.groupby("ano")[["valor_aprovado", "valor_captado"]].sum().reset_index()
 
-        fig_linha = px.line(
+        fig = px.line(
             evolucao,
             x="ano",
             y=["valor_aprovado", "valor_captado"],
             markers=True
         )
 
-        fig_linha.update_traces(line=dict(width=3), marker=dict(size=6))
-
-        fig_linha.update_layout(
-            title="Evolução por Ano",
+        fig.update_traces(line=dict(width=3))
+        fig.update_layout(
             plot_bgcolor="white",
             paper_bgcolor="white",
-            margin=dict(l=10, r=10, t=50, b=10),
-            xaxis_title="",
-            yaxis_title=""
+            title="Evolução por Ano"
         )
 
-        fig_linha.update_traces(selector=dict(name="valor_aprovado"), line=dict(color="#6D28D9"))
-        fig_linha.update_traces(selector=dict(name="valor_captado"), line=dict(color="#10B981"))
+        st.plotly_chart(fig, use_container_width=True)
 
-        st.plotly_chart(fig_linha, use_container_width=True)
-    else:
-        st.info("Sem coluna de data para evolução")
-
-# Top segmentos
+# Segmentos
 with col2:
-    top_segmentos = (
+    top = (
         df_f.groupby("segmento")["valor_aprovado"]
         .sum()
         .sort_values(ascending=False)
@@ -167,82 +176,25 @@ with col2:
         .reset_index()
     )
 
-    fig_bar = px.bar(
-        top_segmentos,
+    fig2 = px.bar(
+        top,
         x="valor_aprovado",
         y="segmento",
         orientation="h",
         text="valor_aprovado"
     )
 
-    fig_bar.update_traces(
-        marker_color="#6D28D9",
-        texttemplate="R$ %{text:,.0f}",
-        textposition="outside"
-    )
-
-    fig_bar.update_layout(
-        title="Valor por Segmento Cultural",
+    fig2.update_traces(marker_color="#6D28D9")
+    fig2.update_layout(
         plot_bgcolor="white",
         paper_bgcolor="white",
-        margin=dict(l=10, r=10, t=50, b=10),
-        xaxis_title="",
-        yaxis_title=""
+        title="Valor por Segmento Cultural"
     )
 
-    fig_bar.update_yaxes(categoryorder="total ascending")
-
-    st.plotly_chart(fig_bar, use_container_width=True)
+    st.plotly_chart(fig2, use_container_width=True)
 
 # -------------------------
-# 🌎 ANÁLISE TERRITORIAL
-# -------------------------
-st.markdown("## 🌎 Análise Territorial")
-
-top_municipios = (
-    df_f.groupby("cidade")["gap"]
-    .sum()
-    .sort_values(ascending=False)
-    .head(10)
-    .reset_index()
-)
-
-fig_territorio = px.bar(
-    top_municipios,
-    x="gap",
-    y="cidade",
-    orientation="h",
-    color_discrete_sequence=["#F59E0B"]
-)
-
-fig_territorio.update_layout(
-    plot_bgcolor="white",
-    paper_bgcolor="white",
-    margin=dict(l=10, r=10, t=30, b=10),
-    xaxis_title="",
-    yaxis_title=""
-)
-
-st.plotly_chart(fig_territorio, use_container_width=True)
-
-# -------------------------
-# 💡 ONDE INVESTIR
-# -------------------------
-st.markdown("## 💡 Onde Investir")
-
-top_oportunidades = df_f.sort_values("gap", ascending=False).head(5)
-
-st.markdown("""
-<div class="card">
-<b>Top oportunidades com maior potencial de captação:</b>
-<ul>
-""" + "".join([f"<li>{row.get('projetos','Projeto')} - R$ {row['gap']:,.0f}</li>" for _, row in top_oportunidades.iterrows()]) + """
-</ul>
-</div>
-""", unsafe_allow_html=True)
-
-# -------------------------
-# 📋 TABELA FINAL
+# TABELA FINAL
 # -------------------------
 st.markdown("## 📋 Projetos")
 
