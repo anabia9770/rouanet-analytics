@@ -98,7 +98,10 @@ df["gap"] = df["valor_aprovado"] - df["valor_captado"]
 # -------------------------
 # FILTROS
 # -------------------------
-st.markdown("### 🔎 Filtros Interativos")
+st.markdown("""
+<h2 style='margin-top:20px;'>🔎 Filtros</h2>
+<p style='color:#6b7280; margin-top:-10px;'>Refine os dados para análise</p>
+""", unsafe_allow_html=True)
 
 f1, f2 = st.columns(2)
 mun = f1.multiselect("Município", df["cidade"].dropna().unique())
