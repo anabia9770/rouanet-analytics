@@ -166,6 +166,34 @@ with col1:
 
         st.plotly_chart(fig, use_container_width=True)
 
+    # -------------------------
+    # NOVO GRÁFICO (TOP 6 SEGMENTOS QUE MAIS ARRECADAM)
+    # -------------------------
+    top_captado = (
+        df_f.groupby("segmento")["valor_captado"]
+        .sum()
+        .sort_values(ascending=False)
+        .head(6)
+        .reset_index()
+    )
+
+    fig_top = px.bar(
+        top_captado,
+        x="valor_captado",
+        y="segmento",
+        orientation="h",
+        text="valor_captado"
+    )
+
+    fig_top.update_traces(marker_color="#16A34A")
+    fig_top.update_layout(
+        plot_bgcolor="white",
+        paper_bgcolor="white",
+        title="Top 6 Segmentos que Mais Arrecadam"
+    )
+
+    st.plotly_chart(fig_top, use_container_width=True)
+
 # Segmentos
 with col2:
     top = (
