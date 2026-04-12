@@ -37,9 +37,6 @@ body { background-color: #f7f8fc; }
     margin-bottom:12px;
 }
 
-.kpi-title { font-size:13px; color:#6b7280; }
-.kpi-value { font-size:26px; font-weight:600; color:#111827; }
-
 .progress-bar {
     height:6px;
     background:#e5e7eb;
@@ -51,26 +48,6 @@ body { background-color: #f7f8fc; }
 .progress-fill {
     height:100%;
     background:#6D28D9;
-}
-
-/* Estilo da tabela bonita */
-.projetos-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 16px;
-}
-
-.filter-buttons button {
-    margin-right: 8px;
-    border-radius: 999px;
-    font-weight: 500;
-}
-
-.stDataFrame {
-    border-radius: 16px;
-    overflow: hidden;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.04);
 }
 </style>
 """, unsafe_allow_html=True)
@@ -131,7 +108,7 @@ st.markdown("<br>", unsafe_allow_html=True)
 col1, col2 = st.columns(2)
 
 with col1:
-    # Evolução
+    # Evolução por Ano
     if "data_inicio" in df_f.columns:
         df_f["ano"] = pd.to_datetime(df_f["data_inicio"], errors="coerce").dt.year
         evolucao = df_f.groupby("ano")[["valor_aprovado", "valor_captado"]].sum().reset_index()
@@ -140,7 +117,7 @@ with col1:
         fig.update_layout(plot_bgcolor="white", paper_bgcolor="white", title="📈 Evolução por Ano")
         st.plotly_chart(fig, use_container_width=True)
 
-    # Top 6 Segmentos
+    # ==================== TOP 6 - MAIS ARRECADAM (Arredondado + Cores Vibrantes) ====================
     top_captado = (
         df_f.groupby("segmento")["valor_captado"]
         .sum()
@@ -157,15 +134,44 @@ with col1:
         "LITERATURA": "Literatura",
         "Apresentação Música Regional": "Música Regional"
     }
-    top_captado["segmento_curto"] = top_captado["segmento"].map(mapa_nomes)
+    top_captado["segmento_curto"] = top_captado["segmento"].map(mapa_nomes).fillna(top_captado["segmento"])
 
-    fig_top = px.bar(top_captado, x="segmento_curto", y="valor_captado", text="valor_captado")
-    fig_top.update_traces(marker=dict(color="#7C3AED"), textposition="outside")
-    fig_top.update_layout(plot_bgcolor="white", paper_bgcolor="white", title="🏆 Top 6 Segmentos que Mais Arrecadam")
+    colors_top = ["#6366F1", "#8B5CF6", "#EC4899", "#F43F5E", "#14B8A6", "#F59E0B"]
+
+    fig_top = px.bar(
+        top_captado,
+        x="segmento_curto",
+        y="valor_captado",
+        text="valor_captado",
+        color="segmento_curto",
+        color_discrete_sequence=colors_top
+    )
+
+    fig_top.update_traces(
+        marker_line_color="white",
+        marker_line_width=2,
+        texttemplate="R$ %{text:,.0f}",
+        textposition="outside"
+    )
+
+    fig_top.update_layout(
+        plot_bgcolor="white",
+        paper_bgcolor="white",
+        title="🏆 Top 6 Segmentos que Mais Arrecadam",
+        xaxis_title="",
+        yaxis_title="Valor Captado",
+        showlegend=False,
+        bargap=0.15,
+        bargroupgap=0.1
+    )
+
+    # Arredondar as colunas
+    fig_top.update_traces(marker_corner_radius=8)
+
     st.plotly_chart(fig_top, use_container_width=True)
 
 with col2:
-    # Eficiência de Captação (%)
+    # ==================== EFICIÊNCIA DE CAPTAÇÃO (%) - Arredondado + Roxo Moderno ====================
     taxa = (
         df_f.groupby("segmento")[["valor_aprovado", "valor_captado"]]
         .sum()
@@ -175,53 +181,35 @@ with col2:
     taxa = taxa.sort_values("taxa_captacao", ascending=False).head(8)
 
     fig_taxa = px.bar(
-        taxa, x="taxa_captacao", y="segmento", orientation="h",
-        text=taxa["taxa_captacao"].apply(lambda x: f"{x:.0%}")
+        taxa,
+        x="taxa_captacao",
+        y="segmento",
+        orientation="h",
+        text=taxa["taxa_captacao"].apply(lambda x: f"{x:.0%}"),
+        color_discrete_sequence=["#7C3AED"]  # Roxo principal bonito
     )
-    fig_taxa.update_traces(marker_color="#7C3AED")
-    fig_taxa.update_layout(plot_bgcolor="white", paper_bgcolor="white", title="📊 Eficiência de Captação (%)")
+
+    fig_taxa.update_traces(
+        marker_line_color="white",
+        marker_line_width=1.5,
+        textposition="outside"
+    )
+
+    fig_taxa.update_layout(
+        plot_bgcolor="white",
+        paper_bgcolor="white",
+        title="📊 Eficiência de Captação (%)",
+        xaxis_title="Taxa de Captação",
+        yaxis_title="",
+        xaxis_tickformat=".0%",
+        showlegend=False,
+        bargap=0.25
+    )
+
+    # Arredondar as barras horizontais
+    fig_taxa.update_traces(marker_corner_radius=8)
+
     st.plotly_chart(fig_taxa, use_container_width=True)
-
-    # Ranking Onde Investir (mantido do anterior)
-    st.markdown("### 📍 Onde Investir")
-    st.markdown('<span style="color:#6b7280; font-size:14px;">Municípios com maior gap de captação</span>', unsafe_allow_html=True)
-
-    ranking_gap = (
-        df_f.groupby("cidade")
-        .agg(projetos=("cidade", "count"), valor_aprovado=("valor_aprovado", "sum"),
-             valor_captado=("valor_captado", "sum"), gap=("gap", "sum"))
-        .reset_index()
-    )
-    ranking_gap = ranking_gap.sort_values("gap", ascending=False).head(6).reset_index(drop=True)
-
-    for i, row in ranking_gap.iterrows():
-        percent = row["valor_captado"] / row["valor_aprovado"] if row["valor_aprovado"] > 0 else 0
-        gap_m = row["gap"] / 1_000_000
-        aprovado_m = row["valor_aprovado"] / 1_000_000
-
-        st.markdown(f"""
-        <div class="card" style="padding:16px 20px; margin-bottom:10px;">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-                <div style="display:flex; align-items:center; gap:12px;">
-                    <div style="background:#f3e8ff; color:#6D28D9; width:28px; height:28px; border-radius:50%; 
-                                display:flex; align-items:center; justify-content:center; font-weight:700; font-size:15px;">
-                        {i+1}
-                    </div>
-                    <div>
-                        <span style="font-weight:600; color:#111827;">{row["cidade"]}</span><br>
-                        <span style="font-size:13px; color:#6b7280;">{row["projetos"]} projetos</span>
-                    </div>
-                </div>
-                <div style="text-align:right;">
-                    <span style="color:#ea580c; font-weight:600;">Gap: R$ {gap_m:.1f}M</span><br>
-                    <span style="font-size:15px; font-weight:700; color:#111827;">R$ {aprovado_m:.1f}M</span>
-                </div>
-            </div>
-            <div class="progress-bar">
-                <div class="progress-fill" style="width:{percent*100}%;"></div>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
 
 # ========================= NOVA TABELA BONITA =========================
 st.markdown("---")
@@ -241,28 +229,24 @@ with col_b:
 
 st.markdown('<span style="color:#6b7280;">Oportunidades de investimento no Vale do Itajaí</span>', unsafe_allow_html=True)
 
-# Ordenação
 if sort_option == "Maior Gap":
     df_sorted = df_f.sort_values("gap", ascending=False)
 elif sort_option == "Maior Valor":
     df_sorted = df_f.sort_values("valor_aprovado", ascending=False)
-else:  # Mais Captado
+else:
     df_sorted = df_f.sort_values("valor_captado", ascending=False)
 
-# Criar colunas formatadas para exibição
 df_display = df_sorted.copy()
 df_display["Aprovado"] = "R$ " + df_display["valor_aprovado"].apply(lambda x: f"{x:,.2f}")
 df_display["Captado"] = "R$ " + df_display["valor_captado"].apply(lambda x: f"{x:,.2f}")
 df_display["Gap"] = "R$ " + df_display["gap"].apply(lambda x: f"{x:,.2f}")
 
-# Renomear colunas para exibição
 df_display = df_display.rename(columns={
     "evento": "Projeto",
     "segmento": "Segmento",
     "cidade": "Município"
 })
 
-# Selecionar colunas desejadas
 cols_to_show = ["Projeto", "Segmento", "Município", "Aprovado", "Captado", "Gap"]
 
 st.dataframe(
@@ -275,8 +259,6 @@ st.dataframe(
         "Município": st.column_config.TextColumn("Município"),
         "Aprovado": st.column_config.TextColumn("Aprovado"),
         "Captado": st.column_config.TextColumn("Captado"),
-        "Gap": st.column_config.TextColumn("Gap", help="Valor ainda a ser captado")
+        "Gap": st.column_config.TextColumn("Gap")
     }
 )
-
-# =====================================================================
