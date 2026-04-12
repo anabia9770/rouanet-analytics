@@ -1,58 +1,148 @@
-/* fundo geral */
-.main {
-    background-color: #f5f6f8;
+html, body, [class*="css"] {
+    font-family: "Inter", sans-serif;
 }
 
-/* container central */
 .block-container {
-    padding: 2rem 3rem;
+    padding-top: 1.5rem;
+    padding-bottom: 2rem;
+    padding-left: 2rem;
+    padding-right: 2rem;
+    max-width: 1400px;
 }
 
-/* cards */
-.card {
-    background: white;
+.main {
+    background-color: #F5F6F8;
+}
+
+h1, h2, h3, h4, h5 {
+    color: #111827;
+    letter-spacing: -0.02em;
+}
+
+p, label, span, div {
+    color: #6B7280;
+}
+
+.dashboard-card {
+    background: #FFFFFF;
+    border-radius: 16px;
     padding: 20px;
-    border-radius: 14px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+    box-shadow: 0 4px 18px rgba(15, 23, 42, 0.06);
+    border: 1px solid rgba(229, 231, 235, 0.7);
 }
 
-/* títulos */
-.title {
-    font-size: 28px;
-    font-weight: 600;
-    color: #1f2937;
+.metric-card {
+    background: #FFFFFF;
+    border-radius: 16px;
+    padding: 18px 20px;
+    box-shadow: 0 4px 18px rgba(15, 23, 42, 0.06);
+    border: 1px solid rgba(229, 231, 235, 0.7);
+    min-height: 120px;
 }
 
-.subtitle {
+.metric-label {
     font-size: 14px;
-    color: #6b7280;
+    color: #6B7280;
+    margin-bottom: 8px;
 }
 
-/* KPI */
-.kpi-title {
+.metric-value {
+    font-size: 32px;
+    font-weight: 700;
+    color: #111827;
+}
+
+.metric-icon {
+    width: 42px;
+    height: 42px;
+    border-radius: 999px;
+    background: #F3E8FF;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #7C3AED;
+    font-size: 20px;
+}
+
+.section-title {
+    font-size: 28px;
+    font-weight: 700;
+    color: #111827;
+    margin-bottom: 4px;
+}
+
+.section-subtitle {
+    font-size: 15px;
+    color: #6B7280;
+    margin-bottom: 20px;
+}
+
+.filter-card {
+    background: #FFFFFF;
+    border-radius: 16px;
+    padding: 20px;
+    box-shadow: 0 4px 18px rgba(15, 23, 42, 0.06);
+    border: 1px solid rgba(229, 231, 235, 0.7);
+    margin-bottom: 20px;
+}
+
+.rank-item {
+    background: #FFFFFF;
+    border-radius: 14px;
+    padding: 16px;
+    margin-bottom: 14px;
+    border: 1px solid #ECECEC;
+}
+
+.rank-badge {
+    width: 28px;
+    height: 28px;
+    border-radius: 999px;
+    background: #E9D5FF;
+    color: #7C3AED;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     font-size: 13px;
-    color: #6b7280;
+    font-weight: 700;
 }
 
-.kpi-value {
-    font-size: 24px;
+.small-muted {
+    font-size: 13px;
+    color: #6B7280;
+}
+
+.stButton > button {
+    border-radius: 999px;
+    border: none;
+    background: #7C3AED;
+    color: white;
+    padding: 0.55rem 1rem;
     font-weight: 600;
 }
 
-/* botões */
-.stButton>button {
-    background-color: #6C2BD9;
+.stButton > button:hover {
+    background: #6D28D9;
     color: white;
-    border-radius: 999px;
-    padding: 8px 16px;
-    border: none;
 }
 
-/* chips */
-.chip {
-    display: inline-block;
-    padding: 6px 12px;
-    border-radius: 999px;
-    background: #eee;
-    margin-right: 5px;
+div[data-baseweb="select"] > div {
+    border-radius: 12px !important;
+    border: 1px solid #E5E7EB !important;
+    min-height: 46px;
+}
+
+div.stMultiSelect > div {
+    border-radius: 12px !important;
+}
+
+thead tr th {
+    background-color: #F9FAFB !important;
+    color: #6B7280 !important;
+    font-size: 13px !important;
+}
+
+tbody tr td {
+    font-size: 14px !important;
+    color: #111827 !important;
 }
