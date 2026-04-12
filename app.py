@@ -28,10 +28,39 @@ body { background-color: #f7f8fc; }
     padding:20px;
     border-radius:16px;
     box-shadow:0 2px 10px rgba(0,0,0,0.04);
+    margin-bottom:12px;
 }
 
 .kpi-title { font-size:13px; color:#6b7280; }
 .kpi-value { font-size:26px; font-weight:600; color:#111827; }
+
+.rank {
+    display:flex;
+    align-items:center;
+    gap:10px;
+}
+
+.badge-rank {
+    background:#e9d5ff;
+    color:#6D28D9;
+    font-weight:600;
+    border-radius:999px;
+    padding:6px 10px;
+    font-size:12px;
+}
+
+.progress-bar {
+    height:6px;
+    background:#e5e7eb;
+    border-radius:999px;
+    overflow:hidden;
+    margin-top:6px;
+}
+
+.progress-fill {
+    height:100%;
+    background:#6D28D9;
+}
 
 [data-testid="stDataFrame"] {
     border-radius:12px;
@@ -134,10 +163,7 @@ with col1:
         text="valor_captado"
     )
 
-    fig_top.update_traces(
-        marker_color="#16A34A",
-        textposition="outside"
-    )
+    fig_top.update_traces(marker_color="#16A34A", textposition="outside")
 
     fig_top.update_layout(
         plot_bgcolor="white",
@@ -150,6 +176,7 @@ with col1:
 # DIREITA
 with col2:
 
+    # Eficiência
     taxa = (
         df_f.groupby("segmento")[["valor_aprovado", "valor_captado"]]
         .sum()
@@ -175,47 +202,41 @@ with col2:
 
     st.plotly_chart(fig_taxa, use_container_width=True)
 
-    # MAPA (AGORA MENOR)
-    coords = {
-        "Blumenau": (-26.9194, -49.0661),
-        "Itajaí": (-26.9071, -48.6617),
-        "Balneário Camboriú": (-26.9926, -48.6350),
-        "Brusque": (-27.0977, -48.9175),
-        "Gaspar": (-26.9336, -48.9587),
-        "Indaial": (-26.8976, -49.2310),
-        "Timbó": (-26.8237, -49.2697),
-        "Pomerode": (-26.7406, -49.1787),
-        "Navegantes": (-26.8943, -48.6537)
-    }
+    # 🔥 ONDE INVESTIR (NOVO)
+    st.markdown("### 📍 Onde Investir")
+    st.caption("Municípios com maior gap de captação")
 
-    mapa_df = (
-        df_f.groupby("cidade")["valor_captado"]
+    ranking = (
+        df_f.groupby("cidade")[["valor_aprovado", "valor_captado"]]
         .sum()
+        .assign(gap=lambda x: x["valor_aprovado"] - x["valor_captado"])
+        .sort_values("gap", ascending=False)
+        .head(6)
         .reset_index()
     )
 
-    mapa_df["lat"] = mapa_df["cidade"].map(lambda x: coords.get(x, (None, None))[0])
-    mapa_df["lon"] = mapa_df["cidade"].map(lambda x: coords.get(x, (None, None))[1])
-    mapa_df = mapa_df.dropna()
+    max_val = ranking["valor_aprovado"].max()
 
-    fig_map = px.scatter_mapbox(
-        mapa_df,
-        lat="lat",
-        lon="lon",
-        size="valor_captado",
-        color="valor_captado",
-        hover_name="cidade",
-        zoom=8,
-        height=300
-    )
+    for i, row in ranking.iterrows():
+        progresso = row["valor_captado"] / row["valor_aprovado"] if row["valor_aprovado"] > 0 else 0
 
-    fig_map.update_layout(
-        mapbox_style="carto-positron",
-        margin=dict(l=0, r=0, t=40, b=0),
-        title="📍 Distribuição de Investimentos - Vale do Itajaí"
-    )
-
-    st.plotly_chart(fig_map, use_container_width=True)
+        st.markdown(f"""
+        <div class="card">
+            <div class="rank">
+                <div class="badge-rank">{i+1}</div>
+                <div>
+                    <b>{row['cidade']}</b><br>
+                    <span style="color:#6b7280;">{int(row['valor_aprovado']/1e6)}M total</span>
+                </div>
+            </div>
+            <div style="margin-top:8px;">
+                <span style="color:#f59e0b;">Gap: R$ {row['gap']/1e6:.1f}M</span>
+            </div>
+            <div class="progress-bar">
+                <div class="progress-fill" style="width:{progresso*100}%"></div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
 
 # TABELA
 st.markdown("## 📋 Projetos")
