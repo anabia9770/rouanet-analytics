@@ -100,7 +100,7 @@ df["gap"] = df["valor_aprovado"] - df["valor_captado"]
 # -------------------------
 # FILTROS NO TOPO
 # -------------------------
-st.markdown("### 🔎 Filtros Interativos")
+st.markdown("### 🔎 Onde Investir")
 
 with st.container():
     f1, f2 = st.columns(2)
