@@ -1,82 +1,86 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+from styles import load_css
+from components import card
 
 st.set_page_config(layout="wide")
+load_css()
 
 # -------------------------
-# CSS GLOBAL
+# CSS
 # -------------------------
 st.markdown("""
 <style>
-.block-container {
-    max-width: 1400px;
-    margin: auto;
-}
+body { background-color: #f7f8fc; }
+.block-container { padding-top: 2rem; max-width:1400px; margin:auto; }
 
-.rank-card {
-    background:white;
-    padding:10px 14px;
-    border-radius:12px;
-    margin-bottom:8px;
-    border:1px solid #f1f5f9;
-}
-
-.rank-row {
+.header {
     display:flex;
-    align-items:center;
     justify-content:space-between;
+    align-items:center;
+    margin-bottom:20px;
 }
 
-.rank-left {
+.badge {
+    background:#e5e7eb;
+    padding:6px 12px;
+    border-radius:999px;
+    font-size:12px;
+}
+
+.card {
+    background:white;
+    padding:20px;
+    border-radius:16px;
+    box-shadow:0 2px 10px rgba(0,0,0,0.04);
+    margin-bottom:12px;
+}
+
+.kpi-title { font-size:13px; color:#6b7280; }
+.kpi-value { font-size:26px; font-weight:600; color:#111827; }
+
+.rank {
     display:flex;
     align-items:center;
     gap:10px;
 }
 
-.rank-badge {
-    background:#EDE9FE;
+.badge-rank {
+    background:#e9d5ff;
     color:#6D28D9;
     font-weight:600;
     border-radius:999px;
-    padding:4px 8px;
-    font-size:11px;
-}
-
-.rank-city {
-    font-weight:600;
-    font-size:14px;
-}
-
-.rank-sub {
+    padding:6px 10px;
     font-size:12px;
-    color:#6b7280;
 }
 
-.rank-gap {
-    color:#F59E0B;
-    font-weight:600;
-    font-size:13px;
-}
-
-.rank-total {
-    font-weight:600;
-    font-size:13px;
-}
-
-.rank-bar {
-    height:5px;
-    background:#E5E7EB;
+.progress-bar {
+    height:6px;
+    background:#e5e7eb;
     border-radius:999px;
-    margin-top:5px;
     overflow:hidden;
+    margin-top:6px;
 }
 
-.rank-fill {
+.progress-fill {
     height:100%;
-    background:#7C3AED;
+    background:#6D28D9;
 }
 </style>
+""", unsafe_allow_html=True)
+
+# -------------------------
+# HEADER
+# -------------------------
+st.markdown("""
+<div class="header">
+    <div>
+        <h2>📊 Rouanet Analytics</h2>
+        <span style="color:#6b7280;">Vale do Itajaí — Projetos Culturais</span>
+    </div>
+    <div class="badge">Dados: SALIC 🟢</div>
+</div>
 """, unsafe_allow_html=True)
 
 # -------------------------
@@ -92,8 +96,9 @@ df["gap"] = df["valor_aprovado"] - df["valor_captado"]
 # -------------------------
 # FILTROS
 # -------------------------
-f1, f2 = st.columns(2)
+st.markdown("### 🔎 Filtros")
 
+f1, f2 = st.columns(2)
 mun = f1.multiselect("Município", df["cidade"].dropna().unique())
 seg = f2.multiselect("Segmento Cultural", df["segmento"].dropna().unique())
 
@@ -109,9 +114,11 @@ if seg:
 c1, c2, c3, c4 = st.columns(4)
 
 c1.metric("Projetos", len(df_f))
-c2.metric("Aprovado", f"R$ {df_f['valor_aprovado'].sum():,.0f}")
-c3.metric("Captado", f"R$ {df_f['valor_captado'].sum():,.0f}")
+c2.metric("Valor Aprovado", f"R$ {df_f['valor_aprovado'].sum():,.0f}")
+c3.metric("Valor Captado", f"R$ {df_f['valor_captado'].sum():,.0f}")
 c4.metric("Gap", f"R$ {df_f['gap'].sum():,.0f}")
+
+st.markdown("<br>", unsafe_allow_html=True)
 
 # -------------------------
 # GRÁFICOS
@@ -120,6 +127,30 @@ col1, col2 = st.columns(2)
 
 with col1:
 
+    # Evolução
+    if "data_inicio" in df_f.columns:
+        df_f["ano"] = pd.to_datetime(df_f["data_inicio"], errors="coerce").dt.year
+
+        evolucao = df_f.groupby("ano")[["valor_aprovado", "valor_captado"]].sum().reset_index()
+
+        fig = px.line(
+            evolucao,
+            x="ano",
+            y=["valor_aprovado", "valor_captado"],
+            markers=True
+        )
+
+        fig.update_traces(line=dict(width=3))
+
+        fig.update_layout(
+            plot_bgcolor="white",
+            paper_bgcolor="white",
+            title="📈 Evolução por Ano"
+        )
+
+        st.plotly_chart(fig, use_container_width=True)
+
+    # Top 6 corrigido
     top_captado = (
         df_f.groupby("segmento")["valor_captado"]
         .sum()
@@ -146,12 +177,15 @@ with col1:
         text="valor_captado"
     )
 
-    fig_top.update_traces(marker_color="#7C3AED", textposition="outside")
+    fig_top.update_traces(
+        marker=dict(color="#7C3AED"),
+        textposition="outside"
+    )
 
     fig_top.update_layout(
         plot_bgcolor="white",
         paper_bgcolor="white",
-        title="🏆 Top Segmentos"
+        title="🏆 Top 6 Segmentos que Mais Arrecadam"
     )
 
     st.plotly_chart(fig_top, use_container_width=True)
@@ -165,7 +199,7 @@ with col2:
     )
 
     taxa["taxa_captacao"] = taxa["valor_captado"] / taxa["valor_aprovado"]
-    taxa = taxa.sort_values("taxa_captacao", ascending=False).head(6)
+    taxa = taxa.sort_values("taxa_captacao", ascending=False).head(8)
 
     fig_taxa = px.bar(
         taxa,
@@ -175,62 +209,15 @@ with col2:
         text=taxa["taxa_captacao"].apply(lambda x: f"{x:.0%}")
     )
 
-    fig_taxa.update_traces(marker_color="#7C3AED", textposition="outside")
+    fig_taxa.update_traces(marker_color="#7C3AED")
 
     fig_taxa.update_layout(
         plot_bgcolor="white",
         paper_bgcolor="white",
-        title="📊 Eficiência de Captação"
+        title="📊 Eficiência de Captação (%)"
     )
 
     st.plotly_chart(fig_taxa, use_container_width=True)
-
-    # -------------------------
-    # RANKING BONITO (COMPACTO)
-    # -------------------------
-    ranking = (
-        df_f.groupby("cidade")[["valor_aprovado", "valor_captado"]]
-        .sum()
-        .assign(gap=lambda x: x["valor_aprovado"] - x["valor_captado"])
-        .sort_values("gap", ascending=False)
-        .head(6)
-        .reset_index()
-    )
-
-    st.markdown("### 📍 Onde Investir")
-
-    for i, row in ranking.iterrows():
-
-        progresso = row["valor_captado"] / row["valor_aprovado"] if row["valor_aprovado"] > 0 else 0
-
-        st.markdown(f"""
-        <div class="rank-card">
-            <div class="rank-row">
-
-                <div class="rank-left">
-                    <div class="rank-badge">{i+1}</div>
-
-                    <div>
-                        <div class="rank-city">{row['cidade']}</div>
-                        <div class="rank-sub">
-                            {int(row['valor_aprovado']/1e6)}M total
-                        </div>
-                    </div>
-                </div>
-
-                <div style="text-align:right;">
-                    <div class="rank-gap">
-                        R$ {row['gap']/1e6:.1f}M
-                    </div>
-                </div>
-
-            </div>
-
-            <div class="rank-bar">
-                <div class="rank-fill" style="width:{progresso*100}%"></div>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
 
 # -------------------------
 # TABELA
