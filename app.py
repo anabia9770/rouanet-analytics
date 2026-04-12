@@ -143,7 +143,7 @@ st.markdown("<br>", unsafe_allow_html=True)
 # -------------------------
 col1, col2 = st.columns(2)
 
-# Evolução + NOVO GRÁFICO NA MESMA COLUNA
+# Evolução + gráfico novo na mesma coluna
 with col1:
     if "data_inicio" in df_f.columns:
         df_f["ano"] = pd.to_datetime(df_f["data_inicio"], errors="coerce").dt.year
@@ -167,7 +167,7 @@ with col1:
         st.plotly_chart(fig, use_container_width=True)
 
     # -------------------------
-    # NOVO GRÁFICO (AGORA DO TAMANHO CORRETO)
+    # NOVO GRÁFICO
     # -------------------------
     top_captado = (
         df_f.groupby("segmento")["valor_captado"]
@@ -218,203 +218,6 @@ with col1:
     )
 
     st.plotly_chart(fig_top, use_container_width=True)
-
-# Segmentos
-with col2:
-    top = (
-        df_f.groupby("segmento")["valor_aprovado"]
-        .sum()
-        .sort_values(ascending=False)
-        .head(8)
-        .reset_index()
-    )
-
-    fig2 = px.bar(
-        top,
-        x="valor_aprovado",
-        y="segmento",
-        orientation="h",
-        text="valor_aprovado"
-    )
-
-    fig2.update_traces(marker_color="#6D28D9")
-    fig2.update_layout(
-        plot_bgcolor="white",
-        paper_bgcolor="white",
-        title="Valor por Segmento Cultural"
-    )
-
-    st.plotly_chart(fig2, use_container_width=True)
-
-# -------------------------
-# TABELA FINAL
-# -------------------------
-st.markdown("## 📋 Projetos")
-
-st.dataframe(
-    df_f.sort_values("gap", ascending=False),
-    use_container_width=True
-)    margin-bottom:20px;
-}
-
-/* Tabela */
-[data-testid="stDataFrame"] {
-    border-radius:12px;
-    overflow:hidden;
-}
-
-</style>
-""", unsafe_allow_html=True)
-
-# -------------------------
-# HEADER
-# -------------------------
-st.markdown("""
-<div class="header">
-    <div>
-        <h2>📊 Rouanet Analytics</h2>
-        <span style="color:#6b7280;">Vale do Itajaí — Projetos Culturais</span>
-    </div>
-    <div class="badge">Dados: SALIC 🟢</div>
-</div>
-""", unsafe_allow_html=True)
-
-# -------------------------
-# DADOS
-# -------------------------
-df = pd.read_excel("TCC.xlsx")
-
-df.columns = df.columns.str.lower().str.strip().str.replace(" ", "_")
-
-df["valor_aprovado"] = pd.to_numeric(df.get("valor_solicitado", 0), errors="coerce").fillna(0)
-df["valor_captado"] = pd.to_numeric(df.get("valor_captado", 0), errors="coerce").fillna(0)
-df["gap"] = df["valor_aprovado"] - df["valor_captado"]
-
-# -------------------------
-# FILTROS NO TOPO
-# -------------------------
-st.markdown("### 🔎 Filtros Interativos")
-
-with st.container():
-    f1, f2 = st.columns(2)
-
-    mun = f1.multiselect("Município", df["cidade"].dropna().unique())
-    seg = f2.multiselect("Segmento Cultural", df["segmento"].dropna().unique())
-
-df_f = df.copy()
-
-if mun:
-    df_f = df_f[df_f["cidade"].isin(mun)]
-if seg:
-    df_f = df_f[df_f["segmento"].isin(seg)]
-
-# -------------------------
-# KPIs
-# -------------------------
-c1, c2, c3, c4 = st.columns(4)
-
-def card(title, value, icon):
-    return f"""
-    <div class="card">
-        <div style="display:flex; justify-content:space-between;">
-            <div class="kpi-title">{title}</div>
-            <div>{icon}</div>
-        </div>
-        <div class="kpi-value">{value}</div>
-    </div>
-    """
-
-c1.markdown(card("Projetos", len(df_f), "📁"), unsafe_allow_html=True)
-c2.markdown(card("Valor Aprovado", f"R$ {df_f['valor_aprovado'].sum():,.0f}", "💰"), unsafe_allow_html=True)
-c3.markdown(card("Valor Captado", f"R$ {df_f['valor_captado'].sum():,.0f}", "📊"), unsafe_allow_html=True)
-c4.markdown(card("Gap de Investimento", f"R$ {df_f['gap'].sum():,.0f}", "🎯"), unsafe_allow_html=True)
-
-st.markdown("<br>", unsafe_allow_html=True)
-
-# -------------------------
-# GRÁFICOS
-# -------------------------
-col1, col2 = st.columns(2)
-
-# Evolução
-with col1:
-    if "data_inicio" in df_f.columns:
-        df_f["ano"] = pd.to_datetime(df_f["data_inicio"], errors="coerce").dt.year
-
-        evolucao = df_f.groupby("ano")[["valor_aprovado", "valor_captado"]].sum().reset_index()
-
-        fig = px.line(
-            evolucao,
-            x="ano",
-            y=["valor_aprovado", "valor_captado"],
-            markers=True
-        )
-
-        fig.update_traces(line=dict(width=3))
-        fig.update_layout(
-            plot_bgcolor="white",
-            paper_bgcolor="white",
-            title="Evolução por Ano"
-        )
-
-        st.plotly_chart(fig, use_container_width=True)
-
-# -------------------------
-# NOVO GRÁFICO (COM NOMES AJUSTADOS)
-# -------------------------
-top_captado = (
-    df_f.groupby("segmento")["valor_captado"]
-    .sum()
-    .sort_values(ascending=False)
-    .head(6)
-    .reset_index()
-)
-
-# MAPEAMENTO DE NOMES
-mapa_nomes = {
-    "Formação Educacional": "Educacional",
-    "Desfiles festivos de caráter musical e cênico": "Musical",
-    "Apresentação Música Instrumental": "Musical Instrumental",
-    "Apresentação Teatro": "Teatro",
-    "LITERATURA": "Literatura",
-    "Apresentação Música Regional": "Música Regional"
-}
-
-# Aplicar nomes curtos
-top_captado["segmento_curto"] = top_captado["segmento"].map(mapa_nomes)
-
-# Criar gráfico
-fig_top = px.bar(
-    top_captado,
-    x="segmento_curto",
-    y="valor_captado",
-    text="valor_captado"
-)
-
-# Deixar labels em NEGRITO
-fig_top.update_layout(
-    xaxis=dict(
-        tickmode='array',
-        tickvals=top_captado["segmento_curto"],
-        ticktext=[f"<b>{s}</b>" for s in top_captado["segmento_curto"]]
-    )
-)
-
-fig_top.update_traces(
-    marker_color="#16A34A",
-    textposition="outside"
-)
-
-fig_top.update_layout(
-    plot_bgcolor="white",
-    paper_bgcolor="white",
-    title="Top 6 Segmentos que Mais Arrecadam",
-    xaxis_title="",
-    yaxis_title="Valor Captado",
-    showlegend=False
-)
-
-st.plotly_chart(fig_top, use_container_width=True)
 
 # Segmentos
 with col2:
