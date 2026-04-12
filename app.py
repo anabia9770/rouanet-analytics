@@ -40,21 +40,6 @@ body { background-color: #f7f8fc; }
 .kpi-title { font-size:13px; color:#6b7280; }
 .kpi-value { font-size:26px; font-weight:600; color:#111827; }
 
-.rank {
-    display:flex;
-    align-items:center;
-    gap:10px;
-}
-
-.badge-rank {
-    background:#e9d5ff;
-    color:#6D28D9;
-    font-weight:600;
-    border-radius:999px;
-    padding:6px 10px;
-    font-size:12px;
-}
-
 .progress-bar {
     height:6px;
     background:#e5e7eb;
@@ -66,6 +51,26 @@ body { background-color: #f7f8fc; }
 .progress-fill {
     height:100%;
     background:#6D28D9;
+}
+
+/* Estilo da tabela bonita */
+.projetos-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.filter-buttons button {
+    margin-right: 8px;
+    border-radius: 999px;
+    font-weight: 500;
+}
+
+.stDataFrame {
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.04);
 }
 </style>
 """, unsafe_allow_html=True)
@@ -126,28 +131,13 @@ st.markdown("<br>", unsafe_allow_html=True)
 col1, col2 = st.columns(2)
 
 with col1:
-
     # Evolução
     if "data_inicio" in df_f.columns:
         df_f["ano"] = pd.to_datetime(df_f["data_inicio"], errors="coerce").dt.year
-
         evolucao = df_f.groupby("ano")[["valor_aprovado", "valor_captado"]].sum().reset_index()
-
-        fig = px.line(
-            evolucao,
-            x="ano",
-            y=["valor_aprovado", "valor_captado"],
-            markers=True
-        )
-
+        fig = px.line(evolucao, x="ano", y=["valor_aprovado", "valor_captado"], markers=True)
         fig.update_traces(line=dict(width=3))
-
-        fig.update_layout(
-            plot_bgcolor="white",
-            paper_bgcolor="white",
-            title="📈 Evolução por Ano"
-        )
-
+        fig.update_layout(plot_bgcolor="white", paper_bgcolor="white", title="📈 Evolução por Ano")
         st.plotly_chart(fig, use_container_width=True)
 
     # Top 6 Segmentos
@@ -167,72 +157,39 @@ with col1:
         "LITERATURA": "Literatura",
         "Apresentação Música Regional": "Música Regional"
     }
-
     top_captado["segmento_curto"] = top_captado["segmento"].map(mapa_nomes)
 
-    fig_top = px.bar(
-        top_captado,
-        x="segmento_curto",
-        y="valor_captado",
-        text="valor_captado"
-    )
-
-    fig_top.update_traces(
-        marker=dict(color="#7C3AED"),
-        textposition="outside"
-    )
-
-    fig_top.update_layout(
-        plot_bgcolor="white",
-        paper_bgcolor="white",
-        title="🏆 Top 6 Segmentos que Mais Arrecadam"
-    )
-
+    fig_top = px.bar(top_captado, x="segmento_curto", y="valor_captado", text="valor_captado")
+    fig_top.update_traces(marker=dict(color="#7C3AED"), textposition="outside")
+    fig_top.update_layout(plot_bgcolor="white", paper_bgcolor="white", title="🏆 Top 6 Segmentos que Mais Arrecadam")
     st.plotly_chart(fig_top, use_container_width=True)
 
 with col2:
-
     # Eficiência de Captação (%)
     taxa = (
         df_f.groupby("segmento")[["valor_aprovado", "valor_captado"]]
         .sum()
         .reset_index()
     )
-
     taxa["taxa_captacao"] = taxa["valor_captado"] / taxa["valor_aprovado"].replace(0, 1)
     taxa = taxa.sort_values("taxa_captacao", ascending=False).head(8)
 
     fig_taxa = px.bar(
-        taxa,
-        x="taxa_captacao",
-        y="segmento",
-        orientation="h",
+        taxa, x="taxa_captacao", y="segmento", orientation="h",
         text=taxa["taxa_captacao"].apply(lambda x: f"{x:.0%}")
     )
-
     fig_taxa.update_traces(marker_color="#7C3AED")
-
-    fig_taxa.update_layout(
-        plot_bgcolor="white",
-        paper_bgcolor="white",
-        title="📊 Eficiência de Captação (%)"
-    )
-
+    fig_taxa.update_layout(plot_bgcolor="white", paper_bgcolor="white", title="📊 Eficiência de Captação (%)")
     st.plotly_chart(fig_taxa, use_container_width=True)
 
-    # ====================== NOVO RANKING: ONDE INVESTIR ======================
+    # Ranking Onde Investir (mantido do anterior)
     st.markdown("### 📍 Onde Investir")
     st.markdown('<span style="color:#6b7280; font-size:14px;">Municípios com maior gap de captação</span>', unsafe_allow_html=True)
 
-    # Cálculo do ranking por município (maior Gap)
     ranking_gap = (
         df_f.groupby("cidade")
-        .agg(
-            projetos=("cidade", "count"),
-            valor_aprovado=("valor_aprovado", "sum"),
-            valor_captado=("valor_captado", "sum"),
-            gap=("gap", "sum")
-        )
+        .agg(projetos=("cidade", "count"), valor_aprovado=("valor_aprovado", "sum"),
+             valor_captado=("valor_captado", "sum"), gap=("gap", "sum"))
         .reset_index()
     )
     ranking_gap = ranking_gap.sort_values("gap", ascending=False).head(6).reset_index(drop=True)
@@ -265,10 +222,61 @@ with col2:
             </div>
         </div>
         """, unsafe_allow_html=True)
-    # =========================================================================
 
-# -------------------------
-# TABELA
-# -------------------------
-st.markdown("## 📋 Projetos")
-st.dataframe(df_f.sort_values("gap", ascending=False), use_container_width=True)
+# ========================= NOVA TABELA BONITA =========================
+st.markdown("---")
+
+col_a, col_b = st.columns([3, 1])
+with col_a:
+    st.markdown(f"### Projetos ({len(df_f)})")
+with col_b:
+    st.markdown('<div style="text-align:right;">', unsafe_allow_html=True)
+    sort_option = st.radio(
+        "Ordenar por:",
+        ["Maior Gap", "Maior Valor", "Mais Captado"],
+        horizontal=True,
+        label_visibility="collapsed"
+    )
+    st.markdown('</div>', unsafe_allow_html=True)
+
+st.markdown('<span style="color:#6b7280;">Oportunidades de investimento no Vale do Itajaí</span>', unsafe_allow_html=True)
+
+# Ordenação
+if sort_option == "Maior Gap":
+    df_sorted = df_f.sort_values("gap", ascending=False)
+elif sort_option == "Maior Valor":
+    df_sorted = df_f.sort_values("valor_aprovado", ascending=False)
+else:  # Mais Captado
+    df_sorted = df_f.sort_values("valor_captado", ascending=False)
+
+# Criar colunas formatadas para exibição
+df_display = df_sorted.copy()
+df_display["Aprovado"] = "R$ " + df_display["valor_aprovado"].apply(lambda x: f"{x:,.2f}")
+df_display["Captado"] = "R$ " + df_display["valor_captado"].apply(lambda x: f"{x:,.2f}")
+df_display["Gap"] = "R$ " + df_display["gap"].apply(lambda x: f"{x:,.2f}")
+
+# Renomear colunas para exibição
+df_display = df_display.rename(columns={
+    "evento": "Projeto",
+    "segmento": "Segmento",
+    "cidade": "Município"
+})
+
+# Selecionar colunas desejadas
+cols_to_show = ["Projeto", "Segmento", "Município", "Aprovado", "Captado", "Gap"]
+
+st.dataframe(
+    df_display[cols_to_show],
+    use_container_width=True,
+    hide_index=True,
+    column_config={
+        "Projeto": st.column_config.TextColumn("Projeto", width="medium"),
+        "Segmento": st.column_config.TextColumn("Segmento"),
+        "Município": st.column_config.TextColumn("Município"),
+        "Aprovado": st.column_config.TextColumn("Aprovado"),
+        "Captado": st.column_config.TextColumn("Captado"),
+        "Gap": st.column_config.TextColumn("Gap", help="Valor ainda a ser captado")
+    }
+)
+
+# =====================================================================
