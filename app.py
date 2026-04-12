@@ -79,10 +79,10 @@ body {
 st.markdown("""
 <div class="header">
     <div>
-        <h2>📊 Vilic Analytics</h2>
+        <h2>📊 Rouanet Analytics</h2>
         <span style="color:#6b7280;">Vale do Itajaí — Projetos Culturais</span>
     </div>
-    <div class="badge">Dados: VILIC 🟢</div>
+    <div class="badge">Dados: SALIC 🟢</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -100,7 +100,7 @@ df["gap"] = df["valor_aprovado"] - df["valor_captado"]
 # -------------------------
 # FILTROS NO TOPO
 # -------------------------
-st.markdown("### 🔎 Onde Investir")
+st.markdown("### 🔎 Filtros Interativos")
 
 with st.container():
     f1, f2 = st.columns(2)
@@ -143,7 +143,7 @@ st.markdown("<br>", unsafe_allow_html=True)
 # -------------------------
 col1, col2 = st.columns(2)
 
-# Evolução + gráfico novo na mesma coluna
+# Evolução + gráfico novo
 with col1:
     if "data_inicio" in df_f.columns:
         df_f["ano"] = pd.to_datetime(df_f["data_inicio"], errors="coerce").dt.year
@@ -166,9 +166,7 @@ with col1:
 
         st.plotly_chart(fig, use_container_width=True)
 
-    # -------------------------
-    # NOVO GRÁFICO
-    # -------------------------
+    # gráfico já existente (top captado)
     top_captado = (
         df_f.groupby("segmento")["valor_captado"]
         .sum()
@@ -177,74 +175,56 @@ with col1:
         .reset_index()
     )
 
-    mapa_nomes = {
-        "Formação Educacional": "Educacional",
-        "Desfiles festivos de caráter musical e cênico": "Musical",
-        "Apresentação Música Instrumental": "Musical Instrumental",
-        "Apresentação Teatro": "Teatro",
-        "LITERATURA": "Literatura",
-        "Apresentação Música Regional": "Música Regional"
-    }
-
-    top_captado["segmento_curto"] = top_captado["segmento"].map(mapa_nomes)
-
     fig_top = px.bar(
         top_captado,
-        x="segmento_curto",
-        y="valor_captado",
-        text="valor_captado"
-    )
-
-    fig_top.update_layout(
-        xaxis=dict(
-            tickmode='array',
-            tickvals=top_captado["segmento_curto"],
-            ticktext=[f"<b>{s}</b>" for s in top_captado["segmento_curto"]]
-        )
-    )
-
-    fig_top.update_traces(
-        marker_color="#16A34A",
-        textposition="outside"
+        x="segmento",
+        y="valor_captado"
     )
 
     fig_top.update_layout(
         plot_bgcolor="white",
         paper_bgcolor="white",
-        title="Top 6 Segmentos que Mais Arrecadam",
-        xaxis_title="",
-        yaxis_title="Valor Captado",
-        showlegend=False
+        title="Top 6 Segmentos que Mais Arrecadam"
     )
 
     st.plotly_chart(fig_top, use_container_width=True)
 
-# Segmentos
+# -------------------------
+# NOVO GRÁFICO (SUBSTITUIU O ANTIGO)
+# -------------------------
 with col2:
-    top = (
-        df_f.groupby("segmento")["valor_aprovado"]
+
+    taxa = (
+        df_f.groupby("segmento")[["valor_aprovado", "valor_captado"]]
         .sum()
-        .sort_values(ascending=False)
-        .head(8)
         .reset_index()
     )
 
-    fig2 = px.bar(
-        top,
-        x="valor_aprovado",
+    taxa["taxa_captacao"] = taxa["valor_captado"] / taxa["valor_aprovado"]
+
+    taxa = taxa.sort_values("taxa_captacao", ascending=False).head(8)
+
+    fig_taxa = px.bar(
+        taxa,
+        x="taxa_captacao",
         y="segmento",
         orientation="h",
-        text="valor_aprovado"
+        text=taxa["taxa_captacao"].apply(lambda x: f"{x:.0%}")
     )
 
-    fig2.update_traces(marker_color="#6D28D9")
-    fig2.update_layout(
+    fig_taxa.update_traces(
+        marker_color="#10B981"
+    )
+
+    fig_taxa.update_layout(
         plot_bgcolor="white",
         paper_bgcolor="white",
-        title="Valor por Segmento Cultural"
+        title="📈 Eficiência de Captação por Segmento (%)",
+        xaxis_title="Taxa de Captação",
+        yaxis_title="",
     )
 
-    st.plotly_chart(fig2, use_container_width=True)
+    st.plotly_chart(fig_taxa, use_container_width=True)
 
 # -------------------------
 # TABELA FINAL
