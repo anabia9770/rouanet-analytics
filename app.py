@@ -3,8 +3,7 @@ import pandas as pd
 import plotly.express as px
 from styles import load_css
 from components import card
-import styles
-styles.apply_styles()
+
 
 st.set_page_config(layout="wide")
 load_css()
