@@ -185,11 +185,39 @@ with col1:
         .reset_index()
     )
 
-    fig_top = px.bar(
-        top_captado,
-        x="segmento",
-        y="valor_captado",
-        text="valor_captado"
+    # mapa para nomes curtos (como antes)
+mapa_nomes = {
+    "Formação Educacional": "Educacional",
+    "Desfiles festivos de caráter musical e cênico": "Musical",
+    "Apresentação Música Instrumental": "Musical Instrumental",
+    "Apresentação Teatro": "Teatro",
+    "LITERATURA": "Literatura",
+    "Apresentação Música Regional": "Música Regional"
+}
+
+top_captado["segmento_curto"] = top_captado["segmento"].map(mapa_nomes)
+
+# gráfico usando nomes curtos
+fig_top = px.bar(
+    top_captado,
+    x="segmento_curto",
+    y="valor_captado",
+    text="valor_captado"
+)
+
+fig_top.update_traces(
+    marker=dict(color="#7C3AED"),
+    textposition="outside"
+)
+
+fig_top.update_layout(
+    plot_bgcolor="white",
+    paper_bgcolor="white",
+    margin=dict(l=10, r=10, t=40, b=10),
+    xaxis=dict(showgrid=False, tickangle=0),
+    yaxis=dict(showgrid=True, gridcolor="#F1F5F9"),
+    title="🏆 Top 6 Segmentos que Mais Arrecadam"
+)
     )
 
     fig_top.update_traces(marker=dict(color="#7C3AED"), textposition="outside")
