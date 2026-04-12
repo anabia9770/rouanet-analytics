@@ -173,6 +173,43 @@ with col1:
 
     st.plotly_chart(fig_top, use_container_width=True)
 
+# -------------------------
+# DONUT: TAMANHO DOS PROJETOS
+# -------------------------
+
+# Criar faixas
+def faixa_valor(v):
+    if v <= 100000:
+        return "Pequenos"
+    elif v <= 500000:
+        return "Médios"
+    else:
+        return "Grandes"
+
+df_f["faixa_projeto"] = df_f["valor_aprovado"].apply(faixa_valor)
+
+dist = df_f["faixa_projeto"].value_counts().reset_index()
+dist.columns = ["categoria", "quantidade"]
+
+fig_donut = px.pie(
+    dist,
+    names="categoria",
+    values="quantidade",
+    hole=0.6
+)
+
+fig_donut.update_traces(
+    textinfo="percent+label",
+    marker=dict(colors=["#10B981", "#3B82F6", "#F59E0B"])
+)
+
+fig_donut.update_layout(
+    title="Distribuição por Tamanho de Projetos",
+    showlegend=False
+)
+
+st.plotly_chart(fig_donut, use_container_width=True)
+
 # DIREITA
 with col2:
 
