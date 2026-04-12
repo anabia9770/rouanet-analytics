@@ -166,39 +166,62 @@ with col1:
 
         st.plotly_chart(fig, use_container_width=True)
 
-    # -------------------------
-    # NOVO GRÁFICO (VERTICAL)
-    # -------------------------
-    top_captado = (
-        df_f.groupby("segmento")["valor_captado"]
-        .sum()
-        .sort_values(ascending=False)
-        .head(6)
-        .reset_index()
-    )
+# -------------------------
+# NOVO GRÁFICO (COM NOMES AJUSTADOS)
+# -------------------------
+top_captado = (
+    df_f.groupby("segmento")["valor_captado"]
+    .sum()
+    .sort_values(ascending=False)
+    .head(6)
+    .reset_index()
+)
 
-    fig_top = px.bar(
-        top_captado,
-        x="segmento",
-        y="valor_captado",
-        text="valor_captado"
-    )
+# MAPEAMENTO DE NOMES
+mapa_nomes = {
+    "Formação Educacional": "Educacional",
+    "Desfiles festivos de caráter musical e cênico": "Musical",
+    "Apresentação Música Instrumental": "Musical Instrumental",
+    "Apresentação Teatro": "Teatro",
+    "LITERATURA": "Literatura",
+    "Apresentação Música Regional": "Música Regional"
+}
 
-    fig_top.update_traces(
-        marker_color="#16A34A",
-        textposition="outside"
-    )
+# Aplicar nomes curtos
+top_captado["segmento_curto"] = top_captado["segmento"].map(mapa_nomes)
 
-    fig_top.update_layout(
-        plot_bgcolor="white",
-        paper_bgcolor="white",
-        title="Top 6 Segmentos que Mais Arrecadam",
-        xaxis_title="",
-        yaxis_title="Valor Captado",
-        showlegend=False
-    )
+# Criar gráfico
+fig_top = px.bar(
+    top_captado,
+    x="segmento_curto",
+    y="valor_captado",
+    text="valor_captado"
+)
 
-    st.plotly_chart(fig_top, use_container_width=True)
+# Deixar labels em NEGRITO
+fig_top.update_layout(
+    xaxis=dict(
+        tickmode='array',
+        tickvals=top_captado["segmento_curto"],
+        ticktext=[f"<b>{s}</b>" for s in top_captado["segmento_curto"]]
+    )
+)
+
+fig_top.update_traces(
+    marker_color="#16A34A",
+    textposition="outside"
+)
+
+fig_top.update_layout(
+    plot_bgcolor="white",
+    paper_bgcolor="white",
+    title="Top 6 Segmentos que Mais Arrecadam",
+    xaxis_title="",
+    yaxis_title="Valor Captado",
+    showlegend=False
+)
+
+st.plotly_chart(fig_top, use_container_width=True)
 
 # Segmentos
 with col2:
