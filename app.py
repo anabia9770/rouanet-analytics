@@ -167,7 +167,7 @@ with col1:
         st.plotly_chart(fig, use_container_width=True)
 
     # -------------------------
-    # NOVO GRÁFICO (TOP 6 SEGMENTOS QUE MAIS ARRECADAM)
+    # NOVO GRÁFICO (VERTICAL)
     # -------------------------
     top_captado = (
         df_f.groupby("segmento")["valor_captado"]
@@ -179,17 +179,23 @@ with col1:
 
     fig_top = px.bar(
         top_captado,
-        x="valor_captado",
-        y="segmento",
-        orientation="h",
+        x="segmento",
+        y="valor_captado",
         text="valor_captado"
     )
 
-    fig_top.update_traces(marker_color="#16A34A")
+    fig_top.update_traces(
+        marker_color="#16A34A",
+        textposition="outside"
+    )
+
     fig_top.update_layout(
         plot_bgcolor="white",
         paper_bgcolor="white",
-        title="Top 6 Segmentos que Mais Arrecadam"
+        title="Top 6 Segmentos que Mais Arrecadam",
+        xaxis_title="",
+        yaxis_title="Valor Captado",
+        showlegend=False
     )
 
     st.plotly_chart(fig_top, use_container_width=True)
