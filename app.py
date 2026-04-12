@@ -79,7 +79,7 @@ body {
 st.markdown("""
 <div class="header">
     <div>
-        <h2>📊 Rouanet Analytics</h2>
+        <h2>📊 Vilic Analytics</h2>
         <span style="color:#6b7280;">Vale do Itajaí — Projetos Culturais</span>
     </div>
     <div class="badge">Dados: VILIC 🟢</div>
