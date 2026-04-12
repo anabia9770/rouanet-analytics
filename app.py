@@ -2,26 +2,13 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 
-# -------------------------
-# CONFIG
-# -------------------------
 st.set_page_config(layout="wide")
 
-# -------------------------
-# CSS MODERNO
-# -------------------------
 st.markdown("""
 <style>
+body { background-color: #f7f8fc; }
+.block-container { padding-top: 2rem; }
 
-body {
-    background-color: #f7f8fc;
-}
-
-.block-container {
-    padding-top: 2rem;
-}
-
-/* Header */
 .header {
     display:flex;
     justify-content:space-between;
@@ -36,7 +23,6 @@ body {
     font-size:12px;
 }
 
-/* Cards */
 .card {
     background:white;
     padding:20px;
@@ -44,38 +30,16 @@ body {
     box-shadow:0 2px 10px rgba(0,0,0,0.04);
 }
 
-/* KPI */
-.kpi-title {
-    font-size:13px;
-    color:#6b7280;
-}
+.kpi-title { font-size:13px; color:#6b7280; }
+.kpi-value { font-size:26px; font-weight:600; color:#111827; }
 
-.kpi-value {
-    font-size:26px;
-    font-weight:600;
-    color:#111827;
-}
-
-/* Filtros */
-.filter-box {
-    background:white;
-    padding:20px;
-    border-radius:16px;
-    margin-bottom:20px;
-}
-
-/* Tabela */
 [data-testid="stDataFrame"] {
     border-radius:12px;
     overflow:hidden;
 }
-
 </style>
 """, unsafe_allow_html=True)
 
-# -------------------------
-# HEADER
-# -------------------------
 st.markdown("""
 <div class="header">
     <div>
@@ -86,38 +50,23 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# -------------------------
-# DADOS
-# -------------------------
 df = pd.read_excel("TCC.xlsx")
-
 df.columns = df.columns.str.lower().str.strip().str.replace(" ", "_")
 
 df["valor_aprovado"] = pd.to_numeric(df.get("valor_solicitado", 0), errors="coerce").fillna(0)
 df["valor_captado"] = pd.to_numeric(df.get("valor_captado", 0), errors="coerce").fillna(0)
 df["gap"] = df["valor_aprovado"] - df["valor_captado"]
 
-# -------------------------
-# FILTROS NO TOPO
-# -------------------------
 st.markdown("### 🔎 Filtros Interativos")
 
-with st.container():
-    f1, f2 = st.columns(2)
-
-    mun = f1.multiselect("Município", df["cidade"].dropna().unique())
-    seg = f2.multiselect("Segmento Cultural", df["segmento"].dropna().unique())
+f1, f2 = st.columns(2)
+mun = f1.multiselect("Município", df["cidade"].dropna().unique())
+seg = f2.multiselect("Segmento Cultural", df["segmento"].dropna().unique())
 
 df_f = df.copy()
+if mun: df_f = df_f[df_f["cidade"].isin(mun)]
+if seg: df_f = df_f[df_f["segmento"].isin(seg)]
 
-if mun:
-    df_f = df_f[df_f["cidade"].isin(mun)]
-if seg:
-    df_f = df_f[df_f["segmento"].isin(seg)]
-
-# -------------------------
-# KPIs
-# -------------------------
 c1, c2, c3, c4 = st.columns(4)
 
 def card(title, value, icon):
@@ -138,24 +87,17 @@ c4.markdown(card("Gap de Investimento", f"R$ {df_f['gap'].sum():,.0f}", "🎯"),
 
 st.markdown("<br>", unsafe_allow_html=True)
 
-# -------------------------
-# GRÁFICOS
-# -------------------------
 col1, col2 = st.columns(2)
 
-# Evolução + TOP 6 (CORRIGIDO)
+# ESQUERDA
 with col1:
+
     if "data_inicio" in df_f.columns:
         df_f["ano"] = pd.to_datetime(df_f["data_inicio"], errors="coerce").dt.year
 
         evolucao = df_f.groupby("ano")[["valor_aprovado", "valor_captado"]].sum().reset_index()
 
-        fig = px.line(
-            evolucao,
-            x="ano",
-            y=["valor_aprovado", "valor_captado"],
-            markers=True
-        )
+        fig = px.line(evolucao, x="ano", y=["valor_aprovado", "valor_captado"], markers=True)
 
         fig.update_layout(
             plot_bgcolor="white",
@@ -165,7 +107,7 @@ with col1:
 
         st.plotly_chart(fig, use_container_width=True)
 
-    # 🔥 TOP 6 AJUSTADO
+    # TOP 6
     top_captado = (
         df_f.groupby("segmento")["valor_captado"]
         .sum()
@@ -174,7 +116,6 @@ with col1:
         .reset_index()
     )
 
-    # nomes curtos
     mapa_nomes = {
         "Formação Educacional": "Educacional",
         "Desfiles festivos de caráter musical e cênico": "Musical",
@@ -201,15 +142,14 @@ with col1:
     fig_top.update_layout(
         plot_bgcolor="white",
         paper_bgcolor="white",
-        title="Top 6 Segmentos que Mais Arrecadam",
-        xaxis_title="",
-        yaxis_title="Valor Captado"
+        title="Top 6 Segmentos que Mais Arrecadam"
     )
 
     st.plotly_chart(fig_top, use_container_width=True)
 
-# Eficiência + mapa (não alterado)
+# DIREITA
 with col2:
+
     taxa = (
         df_f.groupby("segmento")[["valor_aprovado", "valor_captado"]]
         .sum()
@@ -235,12 +175,48 @@ with col2:
 
     st.plotly_chart(fig_taxa, use_container_width=True)
 
-# -------------------------
-# TABELA FINAL
-# -------------------------
-st.markdown("## 📋 Projetos")
+    # MAPA (AGORA MENOR)
+    coords = {
+        "Blumenau": (-26.9194, -49.0661),
+        "Itajaí": (-26.9071, -48.6617),
+        "Balneário Camboriú": (-26.9926, -48.6350),
+        "Brusque": (-27.0977, -48.9175),
+        "Gaspar": (-26.9336, -48.9587),
+        "Indaial": (-26.8976, -49.2310),
+        "Timbó": (-26.8237, -49.2697),
+        "Pomerode": (-26.7406, -49.1787),
+        "Navegantes": (-26.8943, -48.6537)
+    }
 
-st.dataframe(
-    df_f.sort_values("gap", ascending=False),
-    use_container_width=True
-)
+    mapa_df = (
+        df_f.groupby("cidade")["valor_captado"]
+        .sum()
+        .reset_index()
+    )
+
+    mapa_df["lat"] = mapa_df["cidade"].map(lambda x: coords.get(x, (None, None))[0])
+    mapa_df["lon"] = mapa_df["cidade"].map(lambda x: coords.get(x, (None, None))[1])
+    mapa_df = mapa_df.dropna()
+
+    fig_map = px.scatter_mapbox(
+        mapa_df,
+        lat="lat",
+        lon="lon",
+        size="valor_captado",
+        color="valor_captado",
+        hover_name="cidade",
+        zoom=8,
+        height=300
+    )
+
+    fig_map.update_layout(
+        mapbox_style="carto-positron",
+        margin=dict(l=0, r=0, t=40, b=0),
+        title="📍 Distribuição de Investimentos - Vale do Itajaí"
+    )
+
+    st.plotly_chart(fig_map, use_container_width=True)
+
+# TABELA
+st.markdown("## 📋 Projetos")
+st.dataframe(df_f.sort_values("gap", ascending=False), use_container_width=True)
