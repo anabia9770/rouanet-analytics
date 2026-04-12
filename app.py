@@ -4,6 +4,9 @@ import plotly.express as px
 
 st.set_page_config(layout="wide")
 
+# -------------------------
+# CSS
+# -------------------------
 st.markdown("""
 <style>
 body { background-color: #f7f8fc; }
@@ -62,13 +65,12 @@ body { background-color: #f7f8fc; }
     background:#6D28D9;
 }
 
-[data-testid="stDataFrame"] {
-    border-radius:12px;
-    overflow:hidden;
-}
 </style>
 """, unsafe_allow_html=True)
 
+# -------------------------
+# HEADER
+# -------------------------
 st.markdown("""
 <div class="header">
     <div>
@@ -79,6 +81,9 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
+# -------------------------
+# DADOS
+# -------------------------
 df = pd.read_excel("TCC.xlsx")
 df.columns = df.columns.str.lower().str.strip().str.replace(" ", "_")
 
@@ -86,6 +91,9 @@ df["valor_aprovado"] = pd.to_numeric(df.get("valor_solicitado", 0), errors="coer
 df["valor_captado"] = pd.to_numeric(df.get("valor_captado", 0), errors="coerce").fillna(0)
 df["gap"] = df["valor_aprovado"] - df["valor_captado"]
 
+# -------------------------
+# FILTROS
+# -------------------------
 st.markdown("### 🔎 Filtros Interativos")
 
 f1, f2 = st.columns(2)
@@ -96,6 +104,9 @@ df_f = df.copy()
 if mun: df_f = df_f[df_f["cidade"].isin(mun)]
 if seg: df_f = df_f[df_f["segmento"].isin(seg)]
 
+# -------------------------
+# KPIs
+# -------------------------
 c1, c2, c3, c4 = st.columns(4)
 
 def card(title, value, icon):
@@ -116,11 +127,15 @@ c4.markdown(card("Gap de Investimento", f"R$ {df_f['gap'].sum():,.0f}", "🎯"),
 
 st.markdown("<br>", unsafe_allow_html=True)
 
+# -------------------------
+# GRÁFICOS
+# -------------------------
 col1, col2 = st.columns(2)
 
 # ESQUERDA
 with col1:
 
+    # Evolução
     if "data_inicio" in df_f.columns:
         df_f["ano"] = pd.to_datetime(df_f["data_inicio"], errors="coerce").dt.year
 
@@ -136,7 +151,7 @@ with col1:
 
         st.plotly_chart(fig, use_container_width=True)
 
-    # TOP 6
+    # Top 6
     top_captado = (
         df_f.groupby("segmento")["valor_captado"]
         .sum()
@@ -156,12 +171,7 @@ with col1:
 
     top_captado["segmento_curto"] = top_captado["segmento"].map(mapa_nomes)
 
-    fig_top = px.bar(
-        top_captado,
-        x="segmento_curto",
-        y="valor_captado",
-        text="valor_captado"
-    )
+    fig_top = px.bar(top_captado, x="segmento_curto", y="valor_captado", text="valor_captado")
 
     fig_top.update_traces(marker_color="#16A34A", textposition="outside")
 
@@ -173,47 +183,9 @@ with col1:
 
     st.plotly_chart(fig_top, use_container_width=True)
 
-# -------------------------
-# DONUT: TAMANHO DOS PROJETOS
-# -------------------------
-
-# Criar faixas
-def faixa_valor(v):
-    if v <= 100000:
-        return "Pequenos"
-    elif v <= 500000:
-        return "Médios"
-    else:
-        return "Grandes"
-
-df_f["faixa_projeto"] = df_f["valor_aprovado"].apply(faixa_valor)
-
-dist = df_f["faixa_projeto"].value_counts().reset_index()
-dist.columns = ["categoria", "quantidade"]
-
-fig_donut = px.pie(
-    dist,
-    names="categoria",
-    values="quantidade",
-    hole=0.6
-)
-
-fig_donut.update_traces(
-    textinfo="percent+label",
-    marker=dict(colors=["#10B981", "#3B82F6", "#F59E0B"])
-)
-
-fig_donut.update_layout(
-    title="Distribuição por Tamanho de Projetos",
-    showlegend=False
-)
-
-st.plotly_chart(fig_donut, use_container_width=True)
-
 # DIREITA
 with col2:
 
-    # Eficiência
     taxa = (
         df_f.groupby("segmento")[["valor_aprovado", "valor_captado"]]
         .sum()
@@ -239,7 +211,49 @@ with col2:
 
     st.plotly_chart(fig_taxa, use_container_width=True)
 
-    # 🔥 ONDE INVESTIR (NOVO)
+# -------------------------
+# NOVA LINHA (DONUT + ONDE INVESTIR)
+# -------------------------
+col_left2, col_right2 = st.columns(2)
+
+# DONUT
+with col_left2:
+
+    def faixa_valor(v):
+        if v <= 100000:
+            return "Pequenos"
+        elif v <= 500000:
+            return "Médios"
+        else:
+            return "Grandes"
+
+    df_f["faixa_projeto"] = df_f["valor_aprovado"].apply(faixa_valor)
+
+    dist = df_f["faixa_projeto"].value_counts().reset_index()
+    dist.columns = ["categoria", "quantidade"]
+
+    fig_donut = px.pie(
+        dist,
+        names="categoria",
+        values="quantidade",
+        hole=0.6
+    )
+
+    fig_donut.update_traces(
+        textinfo="percent+label",
+        marker=dict(colors=["#10B981", "#3B82F6", "#F59E0B"])
+    )
+
+    fig_donut.update_layout(
+        title="Distribuição por Tamanho de Projetos",
+        height=350
+    )
+
+    st.plotly_chart(fig_donut, use_container_width=True)
+
+# ONDE INVESTIR (SEM ALTERAÇÃO)
+with col_right2:
+
     st.markdown("### 📍 Onde Investir")
     st.caption("Municípios com maior gap de captação")
 
@@ -251,8 +265,6 @@ with col2:
         .head(6)
         .reset_index()
     )
-
-    max_val = ranking["valor_aprovado"].max()
 
     for i, row in ranking.iterrows():
         progresso = row["valor_captado"] / row["valor_aprovado"] if row["valor_aprovado"] > 0 else 0
@@ -275,6 +287,8 @@ with col2:
         </div>
         """, unsafe_allow_html=True)
 
+# -------------------------
 # TABELA
+# -------------------------
 st.markdown("## 📋 Projetos")
 st.dataframe(df_f.sort_values("gap", ascending=False), use_container_width=True)
