@@ -4,7 +4,6 @@ import plotly.express as px
 from styles import load_css
 from components import card
 
-
 st.set_page_config(layout="wide")
 load_css()
 
@@ -14,7 +13,7 @@ load_css()
 st.markdown("""
 <style>
 body { background-color: #f7f8fc; }
-.block-container { padding-top: 2rem; }
+.block-container { padding-top: 2rem; max-width:1400px; margin:auto; }
 
 .header {
     display:flex;
@@ -68,7 +67,6 @@ body { background-color: #f7f8fc; }
     height:100%;
     background:#6D28D9;
 }
-
 </style>
 """, unsafe_allow_html=True)
 
@@ -108,8 +106,10 @@ mun = f1.multiselect("Município", df["cidade"].dropna().unique())
 seg = f2.multiselect("Segmento Cultural", df["segmento"].dropna().unique())
 
 df_f = df.copy()
-if mun: df_f = df_f[df_f["cidade"].isin(mun)]
-if seg: df_f = df_f[df_f["segmento"].isin(seg)]
+if mun:
+    df_f = df_f[df_f["cidade"].isin(mun)]
+if seg:
+    df_f = df_f[df_f["segmento"].isin(seg)]
 
 # -------------------------
 # KPIs
@@ -127,12 +127,7 @@ def card(title, value, icon):
     ">
         <div style="display:flex; justify-content:space-between;">
             <div style="color:#6b7280; font-size:13px;">{title}</div>
-            <div style="
-                background:#F3E8FF;
-                padding:6px 10px;
-                border-radius:10px;
-                color:#7C3AED;
-            ">
+            <div style="background:#F3E8FF;padding:6px 10px;border-radius:10px;color:#7C3AED;">
                 {icon}
             </div>
         </div>
@@ -150,30 +145,38 @@ c4.markdown(card("Gap de Investimento", f"R$ {df_f['gap'].sum():,.0f}", "🎯"),
 st.markdown("<br>", unsafe_allow_html=True)
 
 # -------------------------
-# GRÁFICOS
+# GRÁFICOS (MELHORADOS)
 # -------------------------
 col1, col2 = st.columns(2)
 
-# ESQUERDA
 with col1:
 
-    # Evolução
     if "data_inicio" in df_f.columns:
         df_f["ano"] = pd.to_datetime(df_f["data_inicio"], errors="coerce").dt.year
 
         evolucao = df_f.groupby("ano")[["valor_aprovado", "valor_captado"]].sum().reset_index()
 
-        fig = px.line(evolucao, x="ano", y=["valor_aprovado", "valor_captado"], markers=True)
+        fig = px.line(
+            evolucao,
+            x="ano",
+            y=["valor_aprovado", "valor_captado"],
+            markers=True
+        )
+
+        fig.update_traces(line=dict(width=3))
 
         fig.update_layout(
             plot_bgcolor="white",
             paper_bgcolor="white",
-            title="Evolução por Ano"
+            margin=dict(l=10, r=10, t=40, b=10),
+            legend=dict(orientation="h", y=1.1),
+            xaxis=dict(showgrid=False),
+            yaxis=dict(showgrid=True, gridcolor="#F1F5F9"),
+            title="📈 Evolução por Ano"
         )
 
         st.plotly_chart(fig, use_container_width=True)
 
-    # Top 6
     top_captado = (
         df_f.groupby("segmento")["valor_captado"]
         .sum()
@@ -182,30 +185,26 @@ with col1:
         .reset_index()
     )
 
-    mapa_nomes = {
-        "Formação Educacional": "Educacional",
-        "Desfiles festivos de caráter musical e cênico": "Musical",
-        "Apresentação Música Instrumental": "Musical Instrumental",
-        "Apresentação Teatro": "Teatro",
-        "LITERATURA": "Literatura",
-        "Apresentação Música Regional": "Música Regional"
-    }
+    fig_top = px.bar(
+        top_captado,
+        x="segmento",
+        y="valor_captado",
+        text="valor_captado"
+    )
 
-    top_captado["segmento_curto"] = top_captado["segmento"].map(mapa_nomes)
-
-    fig_top = px.bar(top_captado, x="segmento_curto", y="valor_captado", text="valor_captado")
-
-    fig_top.update_traces(marker_color="#16A34A", textposition="outside")
+    fig_top.update_traces(marker=dict(color="#7C3AED"), textposition="outside")
 
     fig_top.update_layout(
         plot_bgcolor="white",
         paper_bgcolor="white",
-        title="Top 6 Segmentos que Mais Arrecadam"
+        margin=dict(l=10, r=10, t=40, b=10),
+        xaxis=dict(showgrid=False),
+        yaxis=dict(showgrid=True, gridcolor="#F1F5F9"),
+        title="🏆 Top Segmentos que Mais Arrecadam"
     )
 
     st.plotly_chart(fig_top, use_container_width=True)
 
-# DIREITA
 with col2:
 
     taxa = (
@@ -225,20 +224,24 @@ with col2:
         text=taxa["taxa_captacao"].apply(lambda x: f"{x:.0%}")
     )
 
+    fig_taxa.update_traces(marker_color="#7C3AED", textposition="outside")
+
     fig_taxa.update_layout(
         plot_bgcolor="white",
         paper_bgcolor="white",
-        title="📈 Eficiência de Captação por Segmento (%)"
+        margin=dict(l=10, r=10, t=40, b=10),
+        xaxis=dict(showgrid=True, gridcolor="#F1F5F9"),
+        yaxis=dict(showgrid=False),
+        title="📊 Eficiência de Captação (%)"
     )
 
     st.plotly_chart(fig_taxa, use_container_width=True)
 
 # -------------------------
-# NOVA LINHA (DONUT + ONDE INVESTIR)
+# DONUT + ONDE INVESTIR
 # -------------------------
 col_left2, col_right2 = st.columns(2)
 
-# DONUT
 with col_left2:
 
     def faixa_valor(v):
@@ -267,13 +270,14 @@ with col_left2:
     )
 
     fig_donut.update_layout(
-        title="Distribuição por Tamanho de Projetos",
-        height=350
+        paper_bgcolor="white",
+        plot_bgcolor="white",
+        margin=dict(l=10, r=10, t=40, b=10),
+        title="📊 Distribuição por Tamanho de Projetos"
     )
 
     st.plotly_chart(fig_donut, use_container_width=True)
 
-# ONDE INVESTIR (SEM ALTERAÇÃO)
 with col_right2:
 
     st.markdown("### 📍 Onde Investir")
@@ -301,7 +305,9 @@ with col_right2:
                 </div>
             </div>
             <div style="margin-top:8px;">
-                <span style="color:#f59e0b;">Gap: R$ {row['gap']/1e6:.1f}M</span>
+                <span style="color:#f59e0b; font-weight:700;">
+                Gap: R$ {row['gap']/1e6:.1f}M
+                </span>
             </div>
             <div class="progress-bar">
                 <div class="progress-fill" style="width:{progresso*100}%"></div>
