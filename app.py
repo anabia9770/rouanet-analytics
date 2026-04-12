@@ -123,10 +123,19 @@ def card(title, value, icon):
     </div>
     """
 
-with c1: card("Projetos", len(df_f), "📁")
-c2.markdown(card("Valor Aprovado", f"R$ {df_f['valor_aprovado'].sum():,.0f}", "💰"), unsafe_allow_html=True)
-c3.markdown(card("Valor Captado", f"R$ {df_f['valor_captado'].sum():,.0f}", "📊"), unsafe_allow_html=True)
-c4.markdown(card("Gap de Investimento", f"R$ {df_f['gap'].sum():,.0f}", "🎯"), unsafe_allow_html=True)
+c1, c2, c3, c4 = st.columns(4)
+
+with c1:
+    card("Projetos", len(df_f), "📁")
+
+with c2:
+    card("Valor Aprovado", f"R$ {df_f['valor_aprovado'].sum():,.0f}", "💰")
+
+with c3:
+    card("Valor Captado", f"R$ {df_f['valor_captado'].sum():,.0f}", "📊")
+
+with c4:
+    card("Gap de Investimento", f"R$ {df_f['gap'].sum():,.0f}", "🎯")
 
 st.markdown("<br>", unsafe_allow_html=True)
 
