@@ -1,111 +1,58 @@
-/* -------------------------
-   FONT & BASE
--------------------------- */
-html, body, [class*="css"] {
-    font-family: 'Inter', sans-serif;
+/* fundo geral */
+.main {
+    background-color: #f5f6f8;
 }
 
-body {
-    background-color: #f5f7fb;
-}
-
-/* Container */
+/* container central */
 .block-container {
-    padding-top: 2rem;
-    max-width: 1200px;
+    padding: 2rem 3rem;
 }
 
-/* -------------------------
-   TÍTULOS
--------------------------- */
-h1, h2, h3 {
-    font-weight: 700;
-}
-
-h1 {
-    font-size: 28px;
-}
-
-h3 {
-    margin-top: 20px;
-}
-
-/* -------------------------
-   CARDS KPI
--------------------------- */
+/* cards */
 .card {
     background: white;
     padding: 20px;
-    border-radius: 18px;
-    box-shadow: 0 8px 25px rgba(0,0,0,0.05);
-    transition: all 0.2s ease;
+    border-radius: 14px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.05);
 }
 
-.card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 12px 30px rgba(0,0,0,0.08);
+/* títulos */
+.title {
+    font-size: 28px;
+    font-weight: 600;
+    color: #1f2937;
 }
 
+.subtitle {
+    font-size: 14px;
+    color: #6b7280;
+}
+
+/* KPI */
 .kpi-title {
     font-size: 13px;
     color: #6b7280;
 }
 
 .kpi-value {
-    font-size: 28px;
-    font-weight: 700;
-    margin-top: 5px;
-    color: #111827;
+    font-size: 24px;
+    font-weight: 600;
 }
 
-/* -------------------------
-   FILTROS
--------------------------- */
-.stMultiSelect > div {
-    border-radius: 10px !important;
+/* botões */
+.stButton>button {
+    background-color: #6C2BD9;
+    color: white;
+    border-radius: 999px;
+    padding: 8px 16px;
+    border: none;
 }
 
-/* -------------------------
-   GRÁFICOS
--------------------------- */
-[data-testid="stPlotlyChart"] {
-    background: white;
-    padding: 15px;
-    border-radius: 16px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-}
-
-/* -------------------------
-   PROGRESS BAR
--------------------------- */
-.stProgress > div > div {
-    background-color: #6D28D9 !important;
-}
-
-/* -------------------------
-   TABELA
--------------------------- */
-[data-testid="stDataFrame"] {
-    border-radius: 16px;
-    overflow: hidden;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-}
-
-/* -------------------------
-   BOTÕES (se usar depois)
--------------------------- */
-button {
-    border-radius: 10px !important;
-}
-
-/* -------------------------
-   SCROLLBAR BONITA
--------------------------- */
-::-webkit-scrollbar {
-    width: 8px;
-}
-
-::-webkit-scrollbar-thumb {
-    background: #c7d2fe;
-    border-radius: 10px;
+/* chips */
+.chip {
+    display: inline-block;
+    padding: 6px 12px;
+    border-radius: 999px;
+    background: #eee;
+    margin-right: 5px;
 }
