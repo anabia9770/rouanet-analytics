@@ -82,7 +82,7 @@ st.markdown("""
         <h2>📊 Rouanet Analytics</h2>
         <span style="color:#6b7280;">Vale do Itajaí — Projetos Culturais</span>
     </div>
-    <div class="badge">Dados: SALIC 🟢</div>
+    <div class="badge">Dados: VILIC 🟢</div>
 </div>
 """, unsafe_allow_html=True)
 
