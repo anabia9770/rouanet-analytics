@@ -113,51 +113,20 @@ if seg: df_f = df_f[df_f["segmento"].isin(seg)]
 c1, c2, c3, c4 = st.columns(4)
 
 def card(title, value, icon):
-    st.markdown(f"""
-    <div style="
-        background:white;
-        padding:20px;
-        border-radius:16px;
-        box-shadow:0 4px 20px rgba(0,0,0,0.05);
-        display:flex;
-        justify-content:space-between;
-        align-items:center;
-        height:110px;
-    ">
-        <div>
-            <div style="font-size:14px; color:#6b7280;">
-                {title}
-            </div>
-            <div style="font-size:28px; font-weight:700; color:#111827;">
-                {value}
-            </div>
+    return f"""
+    <div class="card">
+        <div style="display:flex; justify-content:space-between;">
+            <div class="kpi-title">{title}</div>
+            <div>{icon}</div>
         </div>
-
-        <div style="
-            background:#ede9fe;
-            color:#6D28D9;
-            padding:10px;
-            border-radius:12px;
-            font-size:18px;
-        ">
-            {icon}
-        </div>
+        <div class="kpi-value">{value}</div>
     </div>
-    """, unsafe_allow_html=True)
+    """
 
-c1, c2, c3, c4 = st.columns(4)
-
-with c1:
-    card("Projetos", len(df_f), "📁")
-
-with c2:
-    card("Valor Aprovado", f"R$ {df_f['valor_aprovado'].sum():,.0f}", "💰")
-
-with c3:
-    card("Valor Captado", f"R$ {df_f['valor_captado'].sum():,.0f}", "📊")
-
-with c4:
-    card("Gap de Investimento", f"R$ {df_f['gap'].sum():,.0f}", "🎯")
+c1.markdown(card("Projetos", len(df_f), "📁"), unsafe_allow_html=True)
+c2.markdown(card("Valor Aprovado", f"R$ {df_f['valor_aprovado'].sum():,.0f}", "💰"), unsafe_allow_html=True)
+c3.markdown(card("Valor Captado", f"R$ {df_f['valor_captado'].sum():,.0f}", "📊"), unsafe_allow_html=True)
+c4.markdown(card("Gap de Investimento", f"R$ {df_f['gap'].sum():,.0f}", "🎯"), unsafe_allow_html=True)
 
 st.markdown("<br>", unsafe_allow_html=True)
 
