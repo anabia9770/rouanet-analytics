@@ -1,11 +1,15 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+from styles import load_css
+from components import card
+
 
 st.set_page_config(layout="wide")
+load_css()
 
 # -------------------------
-# CSS GLOBAL
+# CSS
 # -------------------------
 st.markdown("""
 <style>
@@ -65,62 +69,6 @@ body { background-color: #f7f8fc; }
     background:#6D28D9;
 }
 
-/* NOVA TABELA */
-.table-container {
-    background: white;
-    border-radius: 16px;
-    padding: 20px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.05);
-}
-
-.table-header {
-    display: grid;
-    grid-template-columns: 2.5fr 1.2fr 1.2fr 1fr 1fr 1fr 1fr;
-    font-size: 13px;
-    color: #6B7280;
-    padding-bottom: 10px;
-    border-bottom: 1px solid #E5E7EB;
-}
-
-.table-row {
-    display: grid;
-    grid-template-columns: 2.5fr 1.2fr 1.2fr 1fr 1fr 1fr 1fr;
-    padding: 14px 0;
-    border-bottom: 1px solid #F1F5F9;
-    align-items: center;
-}
-
-.title {
-    font-weight: 600;
-    color: #111827;
-}
-
-.subtitle {
-    font-size: 13px;
-    color: #6B7280;
-}
-
-.status {
-    padding: 6px 12px;
-    border-radius: 999px;
-    font-size: 12px;
-    font-weight: 600;
-}
-
-.status-aberto {
-    background: #EDE9FE;
-    color: #7C3AED;
-}
-
-.status-residual {
-    background: #DDD6FE;
-    color: #6D28D9;
-}
-
-.status-arquivado {
-    background: #FEE2E2;
-    color: #DC2626;
-}
 </style>
 """, unsafe_allow_html=True)
 
@@ -157,10 +105,8 @@ mun = f1.multiselect("Município", df["cidade"].dropna().unique())
 seg = f2.multiselect("Segmento Cultural", df["segmento"].dropna().unique())
 
 df_f = df.copy()
-if mun:
-    df_f = df_f[df_f["cidade"].isin(mun)]
-if seg:
-    df_f = df_f[df_f["segmento"].isin(seg)]
+if mun: df_f = df_f[df_f["cidade"].isin(mun)]
+if seg: df_f = df_f[df_f["segmento"].isin(seg)]
 
 # -------------------------
 # KPIs
@@ -183,69 +129,170 @@ c2.markdown(card("Valor Aprovado", f"R$ {df_f['valor_aprovado'].sum():,.0f}", "�
 c3.markdown(card("Valor Captado", f"R$ {df_f['valor_captado'].sum():,.0f}", "📊"), unsafe_allow_html=True)
 c4.markdown(card("Gap de Investimento", f"R$ {df_f['gap'].sum():,.0f}", "🎯"), unsafe_allow_html=True)
 
+st.markdown("<br>", unsafe_allow_html=True)
+
 # -------------------------
-# FUNÇÃO TABELA NOVA
+# GRÁFICOS
 # -------------------------
-def render_table(df):
-    html = '<div class="table-container">'
+col1, col2 = st.columns(2)
 
-    html += """
-    <div class="table-header">
-        <div>Projeto</div>
-        <div>Segmento</div>
-        <div>Município</div>
-        <div>Aprovado</div>
-        <div>Captado</div>
-        <div>Gap</div>
-        <div>Status</div>
-    </div>
-    """
+# ESQUERDA
+with col1:
 
-    for _, row in df.iterrows():
+    # Evolução
+    if "data_inicio" in df_f.columns:
+        df_f["ano"] = pd.to_datetime(df_f["data_inicio"], errors="coerce").dt.year
 
-        status_text = str(row["situacao_do_projeto"])
+        evolucao = df_f.groupby("ano")[["valor_aprovado", "valor_captado"]].sum().reset_index()
 
-        status_class = "status-aberto"
-        if "residual" in status_text.lower():
-            status_class = "status-residual"
-        if "arquiv" in status_text.lower():
-            status_class = "status-arquivado"
+        fig = px.line(evolucao, x="ano", y=["valor_aprovado", "valor_captado"], markers=True)
 
-        progresso = 0
-        if row["valor_aprovado"] > 0:
-            progresso = row["valor_captado"] / row["valor_aprovado"]
+        fig.update_layout(
+            plot_bgcolor="white",
+            paper_bgcolor="white",
+            title="Evolução por Ano"
+        )
 
-        html += f"""
-        <div class="table-row">
-            <div>
-                <div class="title">{row['evento']}</div>
-                <div class="subtitle">{row['tipo_do_projeto']}</div>
-            </div>
-            <div>{row['segmento']}</div>
-            <div>{row['cidade']}</div>
-            <div>R$ {row['valor_aprovado']:,.0f}</div>
-            <div>
-                R$ {row['valor_captado']:,.0f}
-                <div class="progress-bar">
-                    <div class="progress-fill" style="width:{progresso*100}%"></div>
+        st.plotly_chart(fig, use_container_width=True)
+
+    # Top 6
+    top_captado = (
+        df_f.groupby("segmento")["valor_captado"]
+        .sum()
+        .sort_values(ascending=False)
+        .head(6)
+        .reset_index()
+    )
+
+    mapa_nomes = {
+        "Formação Educacional": "Educacional",
+        "Desfiles festivos de caráter musical e cênico": "Musical",
+        "Apresentação Música Instrumental": "Musical Instrumental",
+        "Apresentação Teatro": "Teatro",
+        "LITERATURA": "Literatura",
+        "Apresentação Música Regional": "Música Regional"
+    }
+
+    top_captado["segmento_curto"] = top_captado["segmento"].map(mapa_nomes)
+
+    fig_top = px.bar(top_captado, x="segmento_curto", y="valor_captado", text="valor_captado")
+
+    fig_top.update_traces(marker_color="#16A34A", textposition="outside")
+
+    fig_top.update_layout(
+        plot_bgcolor="white",
+        paper_bgcolor="white",
+        title="Top 6 Segmentos que Mais Arrecadam"
+    )
+
+    st.plotly_chart(fig_top, use_container_width=True)
+
+# DIREITA
+with col2:
+
+    taxa = (
+        df_f.groupby("segmento")[["valor_aprovado", "valor_captado"]]
+        .sum()
+        .reset_index()
+    )
+
+    taxa["taxa_captacao"] = taxa["valor_captado"] / taxa["valor_aprovado"]
+    taxa = taxa.sort_values("taxa_captacao", ascending=False).head(8)
+
+    fig_taxa = px.bar(
+        taxa,
+        x="taxa_captacao",
+        y="segmento",
+        orientation="h",
+        text=taxa["taxa_captacao"].apply(lambda x: f"{x:.0%}")
+    )
+
+    fig_taxa.update_layout(
+        plot_bgcolor="white",
+        paper_bgcolor="white",
+        title="📈 Eficiência de Captação por Segmento (%)"
+    )
+
+    st.plotly_chart(fig_taxa, use_container_width=True)
+
+# -------------------------
+# NOVA LINHA (DONUT + ONDE INVESTIR)
+# -------------------------
+col_left2, col_right2 = st.columns(2)
+
+# DONUT
+with col_left2:
+
+    def faixa_valor(v):
+        if v <= 100000:
+            return "Pequenos"
+        elif v <= 500000:
+            return "Médios"
+        else:
+            return "Grandes"
+
+    df_f["faixa_projeto"] = df_f["valor_aprovado"].apply(faixa_valor)
+
+    dist = df_f["faixa_projeto"].value_counts().reset_index()
+    dist.columns = ["categoria", "quantidade"]
+
+    fig_donut = px.pie(
+        dist,
+        names="categoria",
+        values="quantidade",
+        hole=0.6
+    )
+
+    fig_donut.update_traces(
+        textinfo="percent+label",
+        marker=dict(colors=["#10B981", "#3B82F6", "#F59E0B"])
+    )
+
+    fig_donut.update_layout(
+        title="Distribuição por Tamanho de Projetos",
+        height=350
+    )
+
+    st.plotly_chart(fig_donut, use_container_width=True)
+
+# ONDE INVESTIR (SEM ALTERAÇÃO)
+with col_right2:
+
+    st.markdown("### 📍 Onde Investir")
+    st.caption("Municípios com maior gap de captação")
+
+    ranking = (
+        df_f.groupby("cidade")[["valor_aprovado", "valor_captado"]]
+        .sum()
+        .assign(gap=lambda x: x["valor_aprovado"] - x["valor_captado"])
+        .sort_values("gap", ascending=False)
+        .head(6)
+        .reset_index()
+    )
+
+    for i, row in ranking.iterrows():
+        progresso = row["valor_captado"] / row["valor_aprovado"] if row["valor_aprovado"] > 0 else 0
+
+        st.markdown(f"""
+        <div class="card">
+            <div class="rank">
+                <div class="badge-rank">{i+1}</div>
+                <div>
+                    <b>{row['cidade']}</b><br>
+                    <span style="color:#6b7280;">{int(row['valor_aprovado']/1e6)}M total</span>
                 </div>
             </div>
-            <div style="color:#F59E0B; font-weight:600;">
-                R$ {row['gap']:,.0f}
+            <div style="margin-top:8px;">
+                <span style="color:#f59e0b;">Gap: R$ {row['gap']/1e6:.1f}M</span>
             </div>
-            <div>
-                <span class="status {status_class}">
-                    {status_text}
-                </span>
+            <div class="progress-bar">
+                <div class="progress-fill" style="width:{progresso*100}%"></div>
             </div>
         </div>
-        """
-
-    html += "</div>"
-    st.markdown(html, unsafe_allow_html=True)
+        """, unsafe_allow_html=True)
 
 # -------------------------
-# MOSTRAR TABELA
+# TABELA
 # -------------------------
 st.markdown("## 📋 Projetos")
-render_table(df_f.head(30))
+st.dataframe(df_f.sort_values("gap", ascending=False), use_container_width=True)
