@@ -25,10 +25,10 @@ body { background-color: #f7f8fc; }
 
 .card {
     background:white;
-    padding:14px;
+    padding:20px;
     border-radius:16px;
     box-shadow:0 2px 10px rgba(0,0,0,0.04);
-    margin-bottom:8px;
+    margin-bottom:12px;
 }
 
 .kpi-title { font-size:13px; color:#6b7280; }
@@ -45,16 +45,16 @@ body { background-color: #f7f8fc; }
     color:#6D28D9;
     font-weight:600;
     border-radius:999px;
-    padding:5px 9px;
-    font-size:11px;
+    padding:6px 10px;
+    font-size:12px;
 }
 
 .progress-bar {
-    height:4px;
+    height:6px;
     background:#e5e7eb;
     border-radius:999px;
     overflow:hidden;
-    margin-top:4px;
+    margin-top:6px;
 }
 
 .progress-fill {
@@ -176,6 +176,7 @@ with col1:
 # DIREITA
 with col2:
 
+    # Eficiência
     taxa = (
         df_f.groupby("segmento")[["valor_aprovado", "valor_captado"]]
         .sum()
@@ -201,7 +202,7 @@ with col2:
 
     st.plotly_chart(fig_taxa, use_container_width=True)
 
-    # 🔥 ONDE INVESTIR (COMPACTO)
+    # 🔥 ONDE INVESTIR (NOVO)
     st.markdown("### 📍 Onde Investir")
     st.caption("Municípios com maior gap de captação")
 
@@ -214,6 +215,8 @@ with col2:
         .reset_index()
     )
 
+    max_val = ranking["valor_aprovado"].max()
+
     for i, row in ranking.iterrows():
         progresso = row["valor_captado"] / row["valor_aprovado"] if row["valor_aprovado"] > 0 else 0
 
@@ -222,19 +225,13 @@ with col2:
             <div class="rank">
                 <div class="badge-rank">{i+1}</div>
                 <div>
-                    <span style="font-size:14px;"><b>{row['cidade']}</b></span><br>
-                    <span style="color:#6b7280; font-size:12px;">
-                        {int(row['valor_aprovado']/1e6)}M total
-                    </span>
+                    <b>{row['cidade']}</b><br>
+                    <span style="color:#6b7280;">{int(row['valor_aprovado']/1e6)}M total</span>
                 </div>
             </div>
-
-            <div style="margin-top:6px;">
-                <span style="color:#f59e0b; font-size:12px;">
-                    Gap: R$ {row['gap']/1e6:.1f}M
-                </span>
+            <div style="margin-top:8px;">
+                <span style="color:#f59e0b;">Gap: R$ {row['gap']/1e6:.1f}M</span>
             </div>
-
             <div class="progress-bar">
                 <div class="progress-fill" style="width:{progresso*100}%"></div>
             </div>
