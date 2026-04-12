@@ -3,7 +3,9 @@ import pandas as pd
 import plotly.express as px
 from styles import load_css
 from components import card
-
+import styles
+styles.apply_styles()
+styles.table_styles()
 
 st.set_page_config(layout="wide")
 load_css()
@@ -294,5 +296,62 @@ with col_right2:
 # -------------------------
 # TABELA
 # -------------------------
-st.markdown("## 📋 Projetos")
-st.dataframe(df_f.sort_values("gap", ascending=False), use_container_width=True)
+def render_table(df):
+    import streamlit as st
+
+    html = '<div class="table-container">'
+
+    # header
+    html += """
+    <div class="table-header">
+        <div>Projeto</div>
+        <div>Segmento</div>
+        <div>Município</div>
+        <div>Aprovado</div>
+        <div>Captado</div>
+        <div>Gap</div>
+        <div>Status</div>
+    </div>
+    """
+
+    for _, row in df.iterrows():
+
+        status_class = "status-aberto"
+        if "residual" in str(row["status"]).lower():
+            status_class = "status-residual"
+        if "arquivado" in str(row["status"]).lower():
+            status_class = "status-arquivado"
+
+        progresso = 0
+        if row["valor_aprovado"] > 0:
+            progresso = row["valor_captado"] / row["valor_aprovado"]
+
+        html += f"""
+        <div class="table-row">
+            <div>
+                <div class="title">{row['evento']}</div>
+                <div class="subtitle">{row['tipo_do_projeto']}</div>
+            </div>
+            <div>{row['segmento']}</div>
+            <div>{row['municipio']}</div>
+            <div>R$ {row['valor_aprovado']:,.0f}</div>
+            <div>
+                R$ {row['valor_captado']:,.0f}
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width:{progresso*100}%"></div>
+                </div>
+            </div>
+            <div style="color:#F59E0B; font-weight:600;">
+                R$ {(row['valor_aprovado'] - row['valor_captado']):,.0f}
+            </div>
+            <div>
+                <span class="status {status_class}">
+                    {row['status']}
+                </span>
+            </div>
+        </div>
+        """
+
+    html += "</div>"
+
+    st.markdown(html, unsafe_allow_html=True)
