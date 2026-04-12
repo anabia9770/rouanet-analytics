@@ -355,3 +355,6 @@ def render_table(df):
     html += "</div>"
 
     st.markdown(html, unsafe_allow_html=True)
+
+st.markdown("## 📋 Projetos")
+render_table(df_f.head(30))
