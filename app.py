@@ -118,12 +118,27 @@ c1, c2, c3, c4 = st.columns(4)
 
 def card(title, value, icon):
     return f"""
-    <div class="card">
+    <div style="
+        background:white;
+        padding:18px;
+        border-radius:16px;
+        box-shadow:0 6px 25px rgba(0,0,0,0.06);
+        border:1px solid #f1f5f9;
+    ">
         <div style="display:flex; justify-content:space-between;">
-            <div class="kpi-title">{title}</div>
-            <div>{icon}</div>
+            <div style="color:#6b7280; font-size:13px;">{title}</div>
+            <div style="
+                background:#F3E8FF;
+                padding:6px 10px;
+                border-radius:10px;
+                color:#7C3AED;
+            ">
+                {icon}
+            </div>
         </div>
-        <div class="kpi-value">{value}</div>
+        <div style="font-size:28px; font-weight:700; margin-top:5px;">
+            {value}
+        </div>
     </div>
     """
 
