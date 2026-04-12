@@ -1,8 +1,10 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+from styles import load_css
 
 st.set_page_config(layout="wide")
+load_css()
 
 # -------------------------
 # CSS
