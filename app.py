@@ -220,6 +220,87 @@ with col2:
     st.plotly_chart(fig_taxa, use_container_width=True)
 
 # -------------------------
+# RANKING ONDE INVESTIR (NOVO)
+# -------------------------
+st.markdown("### 📍 Onde Investir")
+st.caption("Municípios com maior gap de captação")
+
+ranking = (
+    df_f.groupby("cidade")[["valor_aprovado", "valor_captado"]]
+    .sum()
+    .assign(gap=lambda x: x["valor_aprovado"] - x["valor_captado"])
+    .sort_values("gap", ascending=False)
+    .head(6)
+    .reset_index()
+)
+
+for i, row in ranking.iterrows():
+
+    progresso = (
+        row["valor_captado"] / row["valor_aprovado"]
+        if row["valor_aprovado"] > 0 else 0
+    )
+
+    st.markdown(f"""
+    <div style="
+        background:white;
+        padding:14px;
+        border-radius:14px;
+        box-shadow:0 4px 15px rgba(0,0,0,0.05);
+        margin-bottom:10px;
+    ">
+        <div style="display:flex; align-items:center; gap:10px;">
+            
+            <div style="
+                background:#EDE9FE;
+                color:#6D28D9;
+                font-weight:600;
+                border-radius:999px;
+                padding:6px 10px;
+                font-size:12px;
+            ">
+                {i+1}
+            </div>
+
+            <div style="flex:1;">
+                <div style="font-weight:600;">
+                    {row['cidade']}
+                </div>
+                <div style="color:#6b7280; font-size:13px;">
+                    R$ {row['valor_aprovado']/1e6:.1f}M total
+                </div>
+            </div>
+
+            <div style="text-align:right;">
+                <div style="
+                    color:#F59E0B;
+                    font-weight:600;
+                    font-size:14px;
+                ">
+                    Gap: R$ {row['gap']/1e6:.1f}M
+                </div>
+            </div>
+
+        </div>
+
+        <div style="
+            height:6px;
+            background:#E5E7EB;
+            border-radius:999px;
+            margin-top:8px;
+            overflow:hidden;
+        ">
+            <div style="
+                height:100%;
+                width:{progresso*100}%;
+                background:#7C3AED;
+            ">
+            </div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+# -------------------------
 # TABELA
 # -------------------------
 st.markdown("## 📋 Projetos")
