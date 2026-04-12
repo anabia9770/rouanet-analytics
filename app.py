@@ -1,146 +1,103 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+import unicodedata
 
-# -------------------------
-# CONFIG
-# -------------------------
 st.set_page_config(layout="wide")
 
 # -------------------------
-# CSS MODERNO
+# LOAD CSS
+# -------------------------
+def load_css():
+    with open("styles.css") as f:
+        st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
+
+load_css()
+
+# -------------------------
+# HEADER (NOVO)
 # -------------------------
 st.markdown("""
-<style>
-
-body {
-    background-color: #f7f8fc;
-}
-
-.block-container {
-    padding-top: 2rem;
-}
-
-/* Header */
-.header {
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    margin-bottom:20px;
-}
-
-.badge {
-    background:#e5e7eb;
-    padding:6px 12px;
-    border-radius:999px;
-    font-size:12px;
-}
-
-/* Cards */
-.card {
-    background:white;
-    padding:20px;
-    border-radius:16px;
-    box-shadow:0 2px 10px rgba(0,0,0,0.04);
-}
-
-/* KPI */
-.kpi-title {
-    font-size:13px;
-    color:#6b7280;
-}
-
-.kpi-value {
-    font-size:26px;
-    font-weight:600;
-    color:#111827;
-}
-
-/* Filtros */
-.filter-box {
-    background:white;
-    padding:20px;
-    border-radius:16px;
-    margin-bottom:20px;
-}
-
-/* Tabela */
-[data-testid="stDataFrame"] {
-    border-radius:12px;
-    overflow:hidden;
-}
-
-</style>
-""", unsafe_allow_html=True)
-
-# -------------------------
-# HEADER
-# -------------------------
-st.markdown("""
-<div class="header">
-    <div>
-        <h2>📊 Rouanet Analytics</h2>
-        <span style="color:#6b7280;">Vale do Itajaí — Projetos Culturais</span>
+<div class="topbar">
+    <div class="logo">
+        <div class="logo-title">Vilic</div>
+        <div class="logo-sub">projeto tcc</div>
     </div>
-    <div class="badge">Dados: SALIC 🟢</div>
+
+    <div class="main-title">
+        📊 Rouanet Analytics
+    </div>
+
+    <div></div>
 </div>
 """, unsafe_allow_html=True)
+
+st.markdown("<hr>", unsafe_allow_html=True)
+
+# -------------------------
+# NORMALIZAR COLUNAS
+# -------------------------
+def normalize_col(col):
+    col = col.strip().lower().replace(" ", "_")
+    col = unicodedata.normalize("NFKD", col).encode("ascii", "ignore").decode("utf-8")
+    return col
 
 # -------------------------
 # DADOS
 # -------------------------
 df = pd.read_excel("TCC.xlsx")
-
-df.columns = df.columns.str.lower().str.strip().str.replace(" ", "_")
+df.columns = [normalize_col(c) for c in df.columns]
 
 df["valor_aprovado"] = pd.to_numeric(df.get("valor_solicitado", 0), errors="coerce").fillna(0)
 df["valor_captado"] = pd.to_numeric(df.get("valor_captado", 0), errors="coerce").fillna(0)
 df["gap"] = df["valor_aprovado"] - df["valor_captado"]
 
 # -------------------------
-# FILTROS NO TOPO
+# FILTROS
 # -------------------------
-st.markdown("### 🔎 Filtros Interativos")
+st.markdown("### 🔎 Filtros")
 
-with st.container():
-    f1, f2 = st.columns(2)
+f1, f2 = st.columns(2)
 
-    mun = f1.multiselect("Município", df["cidade"].dropna().unique())
-    seg = f2.multiselect("Segmento Cultural", df["segmento"].dropna().unique())
+with f1:
+    cidade = st.multiselect("Cidade", df["cidade"].dropna().unique())
+
+with f2:
+    segmento = st.multiselect("Segmento", df["segmento"].dropna().unique())
 
 df_f = df.copy()
 
-if mun:
-    df_f = df_f[df_f["cidade"].isin(mun)]
-if seg:
-    df_f = df_f[df_f["segmento"].isin(seg)]
+if cidade:
+    df_f = df_f[df_f["cidade"].isin(cidade)]
+
+if segmento:
+    df_f = df_f[df_f["segmento"].isin(segmento)]
 
 # -------------------------
 # KPIs
 # -------------------------
+st.markdown("### 📊 Visão Geral")
+
 c1, c2, c3, c4 = st.columns(4)
 
-def card(title, value, icon):
+def card(titulo, valor):
     return f"""
     <div class="card">
-        <div style="display:flex; justify-content:space-between;">
-            <div class="kpi-title">{title}</div>
-            <div>{icon}</div>
-        </div>
-        <div class="kpi-value">{value}</div>
+        <div class="kpi-title">{titulo}</div>
+        <div class="kpi-value">{valor}</div>
     </div>
     """
 
-c1.markdown(card("Projetos", len(df_f), "📁"), unsafe_allow_html=True)
-c2.markdown(card("Valor Aprovado", f"R$ {df_f['valor_aprovado'].sum():,.0f}", "💰"), unsafe_allow_html=True)
-c3.markdown(card("Valor Captado", f"R$ {df_f['valor_captado'].sum():,.0f}", "📊"), unsafe_allow_html=True)
-c4.markdown(card("Gap de Investimento", f"R$ {df_f['gap'].sum():,.0f}", "🎯"), unsafe_allow_html=True)
-
-st.markdown("<br>", unsafe_allow_html=True)
+c1.markdown(card("Projetos", len(df_f)), unsafe_allow_html=True)
+c2.markdown(card("Valor Aprovado", f"R$ {df_f['valor_aprovado'].sum()/1e6:.1f}M"), unsafe_allow_html=True)
+c3.markdown(card("Valor Captado", f"R$ {df_f['valor_captado'].sum()/1e6:.1f}M"), unsafe_allow_html=True)
+c4.markdown(card("Gap de Investimento", f"R$ {df_f['gap'].sum()/1e6:.1f}M"), unsafe_allow_html=True)
 
 # -------------------------
 # GRÁFICOS
 # -------------------------
+st.markdown("### 📈 Análises")
+
 col1, col2 = st.columns(2)
 
 # Evolução
@@ -148,7 +105,11 @@ with col1:
     if "data_inicio" in df_f.columns:
         df_f["ano"] = pd.to_datetime(df_f["data_inicio"], errors="coerce").dt.year
 
-        evolucao = df_f.groupby("ano")[["valor_aprovado", "valor_captado"]].sum().reset_index()
+        evolucao = (
+            df_f.groupby("ano")[["valor_aprovado", "valor_captado"]]
+            .sum()
+            .reset_index()
+        )
 
         fig = px.line(
             evolucao,
@@ -157,11 +118,10 @@ with col1:
             markers=True
         )
 
-        fig.update_traces(line=dict(width=3))
         fig.update_layout(
             plot_bgcolor="white",
             paper_bgcolor="white",
-            title="Evolução por Ano"
+            hovermode="x unified"
         )
 
         st.plotly_chart(fig, use_container_width=True)
@@ -176,7 +136,7 @@ with col2:
         .reset_index()
     )
 
-    fig2 = px.bar(
+    fig = px.bar(
         top,
         x="valor_aprovado",
         y="segmento",
@@ -184,21 +144,73 @@ with col2:
         text="valor_aprovado"
     )
 
-    fig2.update_traces(marker_color="#6D28D9")
-    fig2.update_layout(
+    fig.update_layout(
         plot_bgcolor="white",
-        paper_bgcolor="white",
-        title="Valor por Segmento Cultural"
+        paper_bgcolor="white"
     )
 
-    st.plotly_chart(fig2, use_container_width=True)
+    st.plotly_chart(fig, use_container_width=True)
 
 # -------------------------
-# TABELA FINAL
+# MUNICÍPIOS
 # -------------------------
-st.markdown("## 📋 Projetos")
+st.markdown("## 📍 Análise Territorial")
 
-st.dataframe(
-    df_f.sort_values("gap", ascending=False),
-    use_container_width=True
-)
+col1, col2 = st.columns([2, 1])
+
+# Gráfico municípios
+with col1:
+    top_mun = (
+        df_f.groupby("cidade")[["valor_aprovado", "valor_captado"]]
+        .sum()
+        .sort_values("valor_aprovado", ascending=False)
+        .head(10)
+        .reset_index()
+    )
+
+    fig_mun = px.bar(
+        top_mun,
+        x="cidade",
+        y=["valor_aprovado", "valor_captado"],
+        barmode="group"
+    )
+
+    fig_mun.update_layout(
+        plot_bgcolor="white",
+        paper_bgcolor="white"
+    )
+
+    st.plotly_chart(fig_mun, use_container_width=True)
+
+# Ranking
+with col2:
+    st.markdown("### 📌 Onde Investir")
+
+    ranking = (
+        df_f.groupby("cidade")[["valor_aprovado", "valor_captado"]]
+        .sum()
+        .assign(gap=lambda x: x["valor_aprovado"] - x["valor_captado"])
+        .sort_values("gap", ascending=False)
+        .head(6)
+        .reset_index()
+    )
+
+    for i, row in ranking.iterrows():
+        progresso = row["valor_captado"] / row["valor_aprovado"] if row["valor_aprovado"] > 0 else 0
+
+        st.markdown(f"""
+        <div class="card">
+            <b>{i+1}. {row['cidade']}</b><br>
+            Gap: R$ {row['gap']/1e6:.1f}M<br>
+            Total: R$ {row['valor_aprovado']/1e6:.1f}M
+        </div>
+        """, unsafe_allow_html=True)
+
+        st.progress(progresso)
+
+# -------------------------
+# TABELA
+# -------------------------
+st.markdown("### 📋 Projetos")
+
+st.dataframe(df_f, use_container_width=True)
