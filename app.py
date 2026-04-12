@@ -150,7 +150,7 @@ with col1:
 
         st.plotly_chart(fig, use_container_width=True)
 
-    # Top 6 corrigido
+    # Top 6 Segmentos
     top_captado = (
         df_f.groupby("segmento")["valor_captado"]
         .sum()
@@ -192,13 +192,14 @@ with col1:
 
 with col2:
 
+    # Eficiência de Captação (%)
     taxa = (
         df_f.groupby("segmento")[["valor_aprovado", "valor_captado"]]
         .sum()
         .reset_index()
     )
 
-    taxa["taxa_captacao"] = taxa["valor_captado"] / taxa["valor_aprovado"]
+    taxa["taxa_captacao"] = taxa["valor_captado"] / taxa["valor_aprovado"].replace(0, 1)
     taxa = taxa.sort_values("taxa_captacao", ascending=False).head(8)
 
     fig_taxa = px.bar(
@@ -218,6 +219,53 @@ with col2:
     )
 
     st.plotly_chart(fig_taxa, use_container_width=True)
+
+    # ====================== NOVO RANKING: ONDE INVESTIR ======================
+    st.markdown("### 📍 Onde Investir")
+    st.markdown('<span style="color:#6b7280; font-size:14px;">Municípios com maior gap de captação</span>', unsafe_allow_html=True)
+
+    # Cálculo do ranking por município (maior Gap)
+    ranking_gap = (
+        df_f.groupby("cidade")
+        .agg(
+            projetos=("cidade", "count"),
+            valor_aprovado=("valor_aprovado", "sum"),
+            valor_captado=("valor_captado", "sum"),
+            gap=("gap", "sum")
+        )
+        .reset_index()
+    )
+    ranking_gap = ranking_gap.sort_values("gap", ascending=False).head(6).reset_index(drop=True)
+
+    for i, row in ranking_gap.iterrows():
+        percent = row["valor_captado"] / row["valor_aprovado"] if row["valor_aprovado"] > 0 else 0
+        gap_m = row["gap"] / 1_000_000
+        aprovado_m = row["valor_aprovado"] / 1_000_000
+
+        st.markdown(f"""
+        <div class="card" style="padding:16px 20px; margin-bottom:10px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                <div style="display:flex; align-items:center; gap:12px;">
+                    <div style="background:#f3e8ff; color:#6D28D9; width:28px; height:28px; border-radius:50%; 
+                                display:flex; align-items:center; justify-content:center; font-weight:700; font-size:15px;">
+                        {i+1}
+                    </div>
+                    <div>
+                        <span style="font-weight:600; color:#111827;">{row["cidade"]}</span><br>
+                        <span style="font-size:13px; color:#6b7280;">{row["projetos"]} projetos</span>
+                    </div>
+                </div>
+                <div style="text-align:right;">
+                    <span style="color:#ea580c; font-weight:600;">Gap: R$ {gap_m:.1f}M</span><br>
+                    <span style="font-size:15px; font-weight:700; color:#111827;">R$ {aprovado_m:.1f}M</span>
+                </div>
+            </div>
+            <div class="progress-bar">
+                <div class="progress-fill" style="width:{percent*100}%;"></div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+    # =========================================================================
 
 # -------------------------
 # TABELA
