@@ -104,7 +104,7 @@ df["gap"] = df["valor_aprovado"] - df["valor_captado"]
 st.markdown("### 🔎 Filtros")
 
 f1, f2 = st.columns(2)
-mun = f1.multiselect("Município", df["cidade"].dropna().unique())
+mun = f1.multiselect("Cidade", df["cidade"].dropna().unique())
 seg = f2.multiselect("Segmento Cultural", df["segmento"].dropna().unique())
 
 df_f = df.copy()
@@ -184,7 +184,7 @@ with col2:
 
     # Ranking Onde Investir (mantido do anterior)
     st.markdown("### 📍 Onde Investir")
-    st.markdown('<span style="color:#6b7280; font-size:14px;">Municípios com maior gap de captação</span>', unsafe_allow_html=True)
+    st.markdown('<span style="color:#6b7280; font-size:14px;">Cidades com maior gap de captação</span>', unsafe_allow_html=True)
 
     ranking_gap = (
         df_f.groupby("cidade")
@@ -259,11 +259,11 @@ df_display["Gap"] = "R$ " + df_display["gap"].apply(lambda x: f"{x:,.2f}")
 df_display = df_display.rename(columns={
     "evento": "Projeto",
     "segmento": "Segmento",
-    "cidade": "Município"
+    "cidade": "Cidade"
 })
 
 # Selecionar colunas desejadas
-cols_to_show = ["Projeto", "Segmento", "Município", "Aprovado", "Captado", "Gap"]
+cols_to_show = ["Projeto", "Segmento", "Cidade", "Aprovado", "Captado", "Gap"]
 
 st.dataframe(
     df_display[cols_to_show],
@@ -272,7 +272,7 @@ st.dataframe(
     column_config={
         "Projeto": st.column_config.TextColumn("Projeto", width="medium"),
         "Segmento": st.column_config.TextColumn("Segmento"),
-        "Município": st.column_config.TextColumn("Município"),
+        "Cidade": st.column_config.TextColumn("Cidade"),
         "Aprovado": st.column_config.TextColumn("Aprovado"),
         "Captado": st.column_config.TextColumn("Captado"),
         "Gap": st.column_config.TextColumn("Gap", help="Valor ainda a ser captado")
