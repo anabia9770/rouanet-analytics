@@ -251,9 +251,12 @@ else:  # Mais Captado
 
 # Criar colunas formatadas para exibição
 df_display = df_sorted.copy()
-df_display["Aprovado"] = "R$ " + df_display["valor_aprovado"].apply(lambda x: f"{x:,.2f}")
-df_display["Captado"] = "R$ " + df_display["valor_captado"].apply(lambda x: f"{x:,.2f}")
-df_display["Gap"] = "R$ " + df_display["gap"].apply(lambda x: f"{x:,.2f}")
+def brl(x):
+    return f"{x:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+
+df_display["Aprovado"] = "R$ " + df_display["valor_aprovado"].apply(brl)
+df_display["Captado"] = "R$ " + df_display["valor_captado"].apply(brl)
+df_display["Gap"] = "R$ " + df_display["gap"].apply(brl)
 
 # Renomear colunas para exibição
 df_display = df_display.rename(columns={
