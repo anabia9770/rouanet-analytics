@@ -119,10 +119,9 @@ if seg:
 c1, c2, c3, c4 = st.columns(4)
 
 c1.metric("Projetos", len(df_f))
-c2.metric("Valor Aprovado", f"R$ {df_f['valor_aprovado'].sum():,.0f}")
-c3.metric("Valor Captado", f"R$ {df_f['valor_captado'].sum():,.0f}")
-c4.metric("Gap", f"R$ {df_f['gap'].sum():,.0f}")
-
+c2.metric("Valor Aprovado", f"R$ {df_f['valor_aprovado'].sum():,.0f}".replace(",", "."))
+c3.metric("Valor Captado", f"R$ {df_f['valor_captado'].sum():,.0f}".replace(",", "."))
+c4.metric("Gap", f"R$ {df_f['gap'].sum():,.0f}".replace(",", "."))
 st.markdown("<br>", unsafe_allow_html=True)
 
 # -------------------------
@@ -254,9 +253,9 @@ df_display = df_sorted.copy()
 def brl(x):
     return f"{x:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
-df_display["Aprovado"] = "R$ " + df_display["valor_aprovado"].apply(brl)
-df_display["Captado"] = "R$ " + df_display["valor_captado"].apply(brl)
-df_display["Gap"] = "R$ " + df_display["gap"].apply(brl)
+df_display["Aprovado"] = "R$ " + df_display["valor_aprovado"].apply(lambda x: f"{x:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
+df_display["Captado"] = "R$ " + df_display["valor_captado"].apply(lambda x: f"{x:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
+df_display["Gap"] = "R$ " + df_display["gap"].apply(lambda x: f"{x:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
 
 # Renomear colunas para exibição
 df_display = df_display.rename(columns={
